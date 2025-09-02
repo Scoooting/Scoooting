@@ -1,0 +1,7 @@
+.gradle
+.idea
+build
+**/application.properties
+**/application.yml
+HELP.md
+**/.iml
