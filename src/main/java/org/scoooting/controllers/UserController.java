@@ -21,6 +21,8 @@ public class UserController {
     @GetMapping("/users/{page}")
     public ResponseEntity<List<UserDto>> getUsers(@PathVariable int page) {
         List<UserDto> userDtos = userService.getPagingUsers(page);
-        return ResponseEntity.ok().header("X-Total-Count", String.valueOf(userDtos.size())).build();
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(userDtos.size()))
+                .body(userDtos);
     }
 }

@@ -5,3 +5,4 @@ build
 **/application.yml
 HELP.md
 **/.iml
+docker-compose.yml
