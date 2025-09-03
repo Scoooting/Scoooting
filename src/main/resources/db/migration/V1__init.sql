@@ -6,3 +6,11 @@ CREATE TABLE IF NOT EXISTS public.users (
     bonuses integer NOT NULL DEFAULT 0,
     role character varying(16) NOT NULL
 );
+
+INSERT INTO users (email, name, password, role)
+SELECT
+    'user' || gs || '@example.com',
+    'User_' || gs,
+    'password' || gs,
+    'USER'
+FROM generate_series(1, 102) AS gs;

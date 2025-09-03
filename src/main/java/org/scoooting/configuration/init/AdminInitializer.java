@@ -1,6 +1,7 @@
 package org.scoooting.configuration.init;
 
 import lombok.RequiredArgsConstructor;
+import org.flywaydb.core.Flyway;
 import org.scoooting.entities.User;
 import org.scoooting.entities.enums.Roles;
 import org.scoooting.repositories.UserRepository;
@@ -34,6 +35,7 @@ public class AdminInitializer implements ApplicationRunner {
                     .name(adminUsername)
                     .email(adminEmail)
                     .password(adminPassword)
+                    .bonuses(0)
                     .role(Roles.ADMIN)
                     .build());
         }
