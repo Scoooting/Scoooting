@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: scoooting
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://db:5432/scoooting
+    username: postgres
+    password: postgres_pass
+
+  flyway:
+    baseline-on-migrate: true
+
+app:
+  admin:
+    username: admin
+    email: admin@ya.ru
+    password: 1234
