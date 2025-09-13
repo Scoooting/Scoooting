@@ -10,9 +10,6 @@ import org.springframework.data.relational.core.mapping.Table;
 
 @Table(name = "users")
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class User {
 
     @Id

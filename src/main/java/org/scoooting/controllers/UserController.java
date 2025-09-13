@@ -2,6 +2,7 @@ package org.scoooting.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.scoooting.dto.UserDto;
+import org.scoooting.services.ScooterService;
 import org.scoooting.services.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/app")
 public class UserController {
 
     private final UserService userService;

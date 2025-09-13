@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS public.users (
+create extension if not exists postgis;
+
+create table if not exists users (
     id bigserial primary key,
     email character varying(64) NOT NULL,
     name character varying(32) NOT NULL,
@@ -7,10 +9,16 @@ CREATE TABLE IF NOT EXISTS public.users (
     role character varying(16) NOT NULL
 );
 
-INSERT INTO users (email, name, password, role)
-SELECT
-    'user' || gs || '@example.com',
-    'User_' || gs,
-    'password' || gs,
-    'USER'
-FROM generate_series(1, 102) AS gs;
+create table if not exists scooters (
+    id bigserial primary key,
+    model varchar(32) NOT NULL,
+    status varchar(32) NOT NULL,
+    latitude real,
+    longitude real
+);
+
+create table area (
+    id bigserial primary key,
+    city varchar(32) not null,
+    district varchar(32) not null
+)
