@@ -1,14 +1,17 @@
-INSERT INTO users (email, name, password, role) VALUES (
+insert into users (email, name, password, role) values (
     '${adminEmail}', '${adminUsername}', '${adminPassword}', 'ADMIN'
 );
 
-INSERT INTO users (email, name, password, role)
-SELECT
+insert into users (email, name, password, role)
+select 
     'user' || gs || '@example.com',
     'User_' || gs,
     'password' || gs,
     'USER'
-FROM generate_series(1, 102) AS gs;
+from generate_series(1, 102) as gs;
 
-INSERT INTO scooters (model, status)
-    SELECT 'Urent 10A8E', 'NONACTIVE' FROM generate_series(1, 50);
+insert into cities (name, latitude_min, longitude_min, latitude_max, longitude_max)
+values ('Санкт-Петербург', 59.823535, 30.184844, 60.041664, 30.431322);
+
+insert into scooters (model, status)
+    select 'Urent 10A8E', 'NONACTIVE' from generate_series(1, 50);

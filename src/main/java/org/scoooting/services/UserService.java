@@ -21,11 +21,6 @@ public class UserService {
     private final UserMapper userMapper;
     private static final int USERS_LIMIT = 50;
 
-    /**
-     * Возвращает список из dto пользователей в размере не более 50.
-     * @param page
-     * @return
-     */
     public List<UserDto> getPagingUsers(int page) {
         Page<User> users = userRepository.findAll(PageRequest.of(page, USERS_LIMIT));
         return users.stream().map(userMapper::toDto).collect(Collectors.toList());

@@ -1,9 +1,10 @@
 package org.scoooting.repositories;
 
-import org.scoooting.entities.Area;
+import org.scoooting.entities.City;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface AreaRepository extends CrudRepository<Area, Long> {
+public interface CityRepository extends CrudRepository<City, Long> {
+    City findByName(String name);
 }
