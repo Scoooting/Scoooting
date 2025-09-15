@@ -39,4 +39,16 @@ public class UserService {
     public long getTotalUserCount() {
         return userRepository.count();
     }
+
+    public UserDTO findUserById(Long id) {
+        return userRepository.findById(id)
+                .map(userMapper::toDTO)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    public UserDTO findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(userMapper::toDTO)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
 }
