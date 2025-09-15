@@ -1,5 +1,5 @@
 package org.scoooting.entities.enums;
 
-public enum Roles {
+public enum UserRoles {
     USER, OPERATOR, SUPPORT, ADMIN
 }
