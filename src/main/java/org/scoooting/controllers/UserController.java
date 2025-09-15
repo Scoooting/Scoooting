@@ -1,13 +1,12 @@
 package org.scoooting.controllers;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.scoooting.dto.UserDto;
+import org.scoooting.dto.UserDTO;
 import org.scoooting.services.UserService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -18,11 +17,28 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping("/{page}")
-    public ResponseEntity<List<UserDto>> getUsers(@PathVariable int page) {
-        List<UserDto> userDtos = userService.getPagingUsers(page);
+    @GetMapping
+    public ResponseEntity<List<UserDTO>> getUsers(
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit,
+            @RequestParam(defaultValue = "0") @Min(0) int offset
+    ) {
+        List<UserDTO> users = userService.getUsers(limit, offset);
+        long totalCount = userService.getTotalUserCount();
+
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(userDtos.size()))
-                .body(userDtos);
+                .header("X-Total-Count", String.valueOf(totalCount))
+                .body(users);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        UserDTO user = userService.findUserById(id);
+        return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<UserDTO> findUserByEmail(@RequestParam String email) {
+        UserDTO user = userService.findUserByEmail(email);
+        return ResponseEntity.ok(user);
     }
 }

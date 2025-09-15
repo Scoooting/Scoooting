@@ -1,6 +1,7 @@
 package org.scoooting.repositories;
 
 import org.scoooting.entities.Scooter;
+import org.scoooting.entities.enums.ScootersStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -21,4 +22,9 @@ public interface ScooterRepository extends CrudRepository<Scooter, Long> {
     @Query("select * from scooters where earth_distance(latitude, longitude, :lat, :lon) <= 2000 and status = 'FREE'")
     List<Scooter> getNearestScooters(@Param("lat") float lat, @Param("lon") float lon);
 
+    @Query("SELECT * FROM scooters WHERE status = :status")
+    List<Scooter> findByStatus(@Param("status") ScootersStatus status);
+
+    @Query("SELECT COUNT(*) FROM scooters WHERE status = :status")
+    Long countByStatus(@Param("status") ScootersStatus status);
 }

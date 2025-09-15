@@ -1,10 +1,7 @@
 package org.scoooting.entities;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.scoooting.entities.enums.Roles;
+import org.scoooting.entities.enums.UserRoles;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -18,6 +15,6 @@ public class User {
     private String name;
     private String password;
     private Integer bonuses;
-    private Roles role;
+    private UserRoles role;
 
 }
