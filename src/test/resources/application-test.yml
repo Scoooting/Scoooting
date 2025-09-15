@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: scoooting
+
+  flyway:
+    baseline-on-migrate: true
+    placeholders:
+      adminUsername: admin
+      adminEmail: admin@ya.ru
+      adminPassword: 1234

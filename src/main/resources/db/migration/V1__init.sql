@@ -26,9 +26,9 @@ create table if not exists scooters (
     longitude real
 );
 
-create function earth_distance(lat1 real, lon1 real, lat2 real, lon2 real)
-    returns real
-    language sql
-    return (SELECT st_distance(
-        ST_SetSRID(ST_MakePoint(lat1, lon1), 4326)::geography,
-        ST_SetSRID(ST_MakePoint(lat2, lon2), 4326)::geography));
+    create function earth_distance(lat1 real, lon1 real, lat2 real, lon2 real)
+        returns real
+        language sql
+        return (SELECT st_distance(
+            ST_SetSRID(ST_MakePoint(lat1, lon1), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(lat2, lon2), 4326)::geography));

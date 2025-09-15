@@ -19,7 +19,7 @@ public class Scooter {
     private Long id;
     private String model;
     private ScootersStatus status;
-    private Double latitude;
-    private Double longitude;
+    private Float latitude;
+    private Float longitude;
 
 }

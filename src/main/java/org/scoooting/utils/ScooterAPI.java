@@ -23,8 +23,8 @@ public class ScooterAPI {
     public List<Scooter> findNearestScooters() {
         List<Scooter> scooters = new LinkedList<>();
         for (long i = 1; i <= 50; i++) {
-            double latitude = Math.random() * (SPB_LATITUDE_MAX - SPB_LATITUDE_MIN) + SPB_LATITUDE_MIN;
-            double longitude = Math.random() * (SPB_LONGITUDE_MAX - SPB_LONGITUDE_MIN) + SPB_LONGITUDE_MIN;
+            float latitude = (float) (Math.random() * (SPB_LATITUDE_MAX - SPB_LATITUDE_MIN) + SPB_LATITUDE_MIN);
+            float longitude = (float) (Math.random() * (SPB_LONGITUDE_MAX - SPB_LONGITUDE_MIN) + SPB_LONGITUDE_MIN);
             scooters.add(new Scooter(i, "Urent 10A8E", ScootersStatus.FREE, latitude, longitude));
         }
 
