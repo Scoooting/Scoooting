@@ -3,7 +3,7 @@ package org.scoooting.dto;
 import lombok.Data;
 
 @Data
-public class UserDto {
+public class UserDTO {
 
     private String email;
     private String name;
