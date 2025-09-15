@@ -29,4 +29,16 @@ public class UserController {
                 .header("X-Total-Count", String.valueOf(totalCount))
                 .body(users);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        UserDTO user = userService.findUserById(id);
+        return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<UserDTO> findUserByEmail(@RequestParam String email) {
+        UserDTO user = userService.findUserByEmail(email);
+        return ResponseEntity.ok(user);
+    }
 }
