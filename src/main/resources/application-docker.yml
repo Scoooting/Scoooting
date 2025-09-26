@@ -1,6 +1,8 @@
 spring:
   application:
     name: scoooting
+  jackson:
+    property-naming-strategy: SNAKE_CASE
 
   datasource:
     driver-class-name: org.postgresql.Driver
