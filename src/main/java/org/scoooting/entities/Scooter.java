@@ -1,5 +1,7 @@
 package org.scoooting.entities;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,8 +19,15 @@ public class Scooter {
 
     @Id
     private Long id;
+
+    @NotBlank
+    @Size(max = 64)
     private String model;
+
+    @NotBlank
+    @Size(max = 32)
     private ScootersStatus status;
+
     private Double latitude;
     private Double longitude;
 

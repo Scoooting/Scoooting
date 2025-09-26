@@ -1,6 +1,6 @@
 CREATE TABLE transports (
     id BIGSERIAL PRIMARY KEY,
-    model VARCHAR(255) NOT NULL,
+    model VARCHAR(64) NOT NULL,
     type VARCHAR(32) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'FREE',
     latitude REAL NOT NULL,

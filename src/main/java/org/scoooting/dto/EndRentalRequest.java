@@ -1,3 +1,5 @@
 package org.scoooting.dto;
 
-public record EndRentalRequest(Double endLatitude, Double endLongitude) {}
+import jakarta.validation.constraints.NotNull;
+
+public record EndRentalRequest(@NotNull Double endLatitude, @NotNull Double endLongitude) {}

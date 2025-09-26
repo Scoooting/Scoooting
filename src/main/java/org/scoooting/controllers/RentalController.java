@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/app/rentals")
+@RequestMapping("/api/rentals")
 public class RentalController {
 
     private final RentalService rentalService;
@@ -88,7 +88,7 @@ public class RentalController {
     public ResponseEntity<List<RentalDTO>> getRentalHistory(
             @RequestParam Long userId,
             @RequestParam(defaultValue = "0") @Min(0) int offset,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit) {
+            @RequestParam(defaultValue = "50") @Min(1) @Max(50) int limit) {
 
         PaginatedRentalsDTO result = rentalService.getUserRentalHistory(userId, offset, limit);
 
@@ -102,15 +102,13 @@ public class RentalController {
      * For ADMIN and ANALYST roles - business intelligence endpoint
      */
     @PostMapping("/analytics/top-users")
-    public ResponseEntity<List<UserAnalyticsDTO>> getTopUsersByUsage(
-            @RequestBody @Valid AnalyticsRequest request) {
-
+    public ResponseEntity<List<UserAnalyticsDTO>> getTopUsersByUsage(@RequestBody @Valid AnalyticsRequest request) {
         try {
             List<UserAnalyticsDTO> analytics = rentalService.getTopUsersByUsage(
                     request.startDate(),
                     request.endDate(),
-                    request.minRentals() != null ? request.minRentals(): 1,
-                    request.limit() != null ? request.limit() : 50
+                    request.minRentals(),
+                    request.limit()
             );
 
             return ResponseEntity.ok(analytics);

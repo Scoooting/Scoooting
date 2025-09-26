@@ -1,3 +1,14 @@
 package org.scoooting.dto;
 
-public record StartRentalRequest(Long transportId, Double startLatitude, Double startLongitude) {}
+import jakarta.validation.constraints.NotNull;
+
+public record StartRentalRequest(
+        @NotNull
+        Long transportId,
+
+        @NotNull
+        Double startLatitude,
+
+        @NotNull
+        Double startLongitude
+) {}

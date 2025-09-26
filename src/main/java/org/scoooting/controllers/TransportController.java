@@ -2,7 +2,6 @@ package org.scoooting.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.scoooting.dto.TransportDTO;
-import org.scoooting.entities.enums.TransportStatus;
 import org.scoooting.entities.enums.TransportType;
 import org.scoooting.services.TransportService;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/app/transports")
+@RequestMapping("/api/transports")
 public class TransportController {
 
     private final TransportService transportService;
@@ -22,17 +21,17 @@ public class TransportController {
      * Get all available transports within 2km radius
      */
     @GetMapping("/nearest")
-    public ResponseEntity<List<TransportDTO>> findNearestTransports(
+    public ResponseEntity<?> findNearestTransports(
             @RequestParam float lat,
             @RequestParam float lon) {
         return ResponseEntity.ok(transportService.findNearestTransports(lat, lon));
     }
 
     /**
-     * Get nearest transports by specific type
+     * Get the nearest transports by specific type
      */
     @GetMapping("/nearest/{type}")
-    public ResponseEntity<List<TransportDTO>> findNearestTransportsByType(
+    public ResponseEntity<?> findNearestTransportsByType(
             @PathVariable TransportType type,
             @RequestParam float lat,
             @RequestParam float lon,
@@ -44,10 +43,10 @@ public class TransportController {
      * Get transports in specific city with pagination
      */
     @GetMapping("/city")
-    public ResponseEntity<List<TransportDTO>> findTransportsInCity(
+    public ResponseEntity<?> findTransportsInCity(
             @RequestParam String city,
             @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "50") int limit) {
         return ResponseEntity.ok(transportService.findTransportsInCity(city, offset, limit));
     }
 
@@ -55,8 +54,7 @@ public class TransportController {
      * Get all available transports by type
      */
     @GetMapping("/available/{type}")
-    public ResponseEntity<List<TransportDTO>> findAvailableTransportsByType(
-            @PathVariable TransportType type) {
+    public ResponseEntity<?> findAvailableTransportsByType(@PathVariable TransportType type) {
         return ResponseEntity.ok(transportService.findAvailableTransportsByType(type));
     }
 
@@ -64,7 +62,7 @@ public class TransportController {
      * Get availability statistics for all transport types
      */
     @GetMapping("/stats/availability")
-    public ResponseEntity<Map<TransportType, Long>> getAvailabilityStats() {
+    public ResponseEntity<?> getAvailabilityStats() {
         return ResponseEntity.ok(transportService.getAvailabilityStats());
     }
 
@@ -72,7 +70,7 @@ public class TransportController {
      * Get specific transport details
      */
     @GetMapping("/{id}")
-    public ResponseEntity<TransportDTO> getTransport(@PathVariable Long id, @RequestParam TransportType type) {
+    public ResponseEntity<?> getTransport(@PathVariable Long id, @RequestParam TransportType type) {
         return ResponseEntity.ok(transportService.getTransportById(id, type));
     }
 

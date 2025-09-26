@@ -20,7 +20,7 @@ create table if not exists cities (
 
 create table if not exists scooters (
     id bigserial primary key,
-    model varchar(32) NOT NULL,
+    model varchar(64) NOT NULL,
     status varchar(32) NOT NULL,
     latitude real,
     longitude real

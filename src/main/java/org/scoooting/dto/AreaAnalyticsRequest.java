@@ -1,6 +1,19 @@
 package org.scoooting.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDateTime;
 
-public record AreaAnalyticsRequest(Double centerLatitude, Double centerLongitude, Double radiusMeters,
-                                  LocalDateTime startDate) {}
+public record AreaAnalyticsRequest(
+        @NotNull
+        Double centerLatitude,
+
+        @NotNull
+        Double centerLongitude,
+
+        @NotNull
+        Double radiusMeters,
+
+        @NotNull
+        LocalDateTime startDate
+) {}

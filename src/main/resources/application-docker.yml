@@ -11,7 +11,6 @@ spring:
     password: postgres_pass
 
   flyway:
-    baseline-on-migrate: true
     placeholders:
       adminUsername: admin
       adminEmail: admin@ya.ru

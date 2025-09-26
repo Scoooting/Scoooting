@@ -12,14 +12,14 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/app/users")
+@RequestMapping("/api/users")
 public class UserController {
 
     private final UserService userService;
 
     @GetMapping
     public ResponseEntity<List<UserDTO>> getUsers(
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int limit,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(50) int limit,
             @RequestParam(defaultValue = "0") @Min(0) int offset
     ) {
         List<UserDTO> users = userService.getUsers(limit, offset);
