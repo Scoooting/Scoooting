@@ -6,16 +6,5 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.scoooting.entities.enums.BikeStatus;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class BikeDTO {
-    private Long id;
-    private String model;
-    private BikeStatus status;
-    private Double latitude;
-    private Double longitude;
-    private Integer gearCount;
-    private Boolean isElectric;
-}
+public record BikeDTO (Long id, String model, BikeStatus status, Double latitude, Double longitude, Integer gearCount,
+                       Boolean isElectric) {}

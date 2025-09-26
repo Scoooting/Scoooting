@@ -37,9 +37,9 @@ public class RentalController {
 
         RentalDTO rental = rentalService.startRental(
                 userId,
-                request.getTransportId(),
-                request.getStartLatitude(),
-                request.getStartLongitude()
+                request.transportId(),
+                request.startLatitude(),
+                request.startLongitude()
         );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(rental);
@@ -55,8 +55,8 @@ public class RentalController {
 
         RentalDTO rental = rentalService.endRental(
                 userId,
-                request.getEndLatitude(),
-                request.getEndLongitude()
+                request.endLatitude(),
+                request.endLongitude()
         );
 
         return ResponseEntity.ok(rental);
@@ -93,8 +93,8 @@ public class RentalController {
         PaginatedRentalsDTO result = rentalService.getUserRentalHistory(userId, offset, limit);
 
         return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(result.getTotalCount()))
-                .body(result.getRentals());
+                .header("X-Total-Count", String.valueOf(result.totalCount()))
+                .body(result.rentals());
     }
 
     /**
@@ -107,10 +107,10 @@ public class RentalController {
 
         try {
             List<UserAnalyticsDTO> analytics = rentalService.getTopUsersByUsage(
-                    request.getStartDate(),
-                    request.getEndDate(),
-                    request.getMinRentals() != null ? request.getMinRentals() : 1,
-                    request.getLimit() != null ? request.getLimit() : 50
+                    request.startDate(),
+                    request.endDate(),
+                    request.minRentals() != null ? request.minRentals(): 1,
+                    request.limit() != null ? request.limit() : 50
             );
 
             return ResponseEntity.ok(analytics);
@@ -130,10 +130,10 @@ public class RentalController {
 
         try {
             List<TransportAnalyticsDTO> analytics = rentalService.getTransportUtilizationInArea(
-                    request.getCenterLatitude(),
-                    request.getCenterLongitude(),
-                    request.getRadiusMeters(),
-                    request.getStartDate()
+                    request.centerLatitude(),
+                    request.centerLongitude(),
+                    request.radiusMeters(),
+                    request.startDate()
             );
 
             return ResponseEntity.ok(analytics);
@@ -185,9 +185,9 @@ public class RentalController {
             try {
                 RentalDTO rental = rentalService.startRental(
                         userId,
-                        request.getTransportId(),
-                        request.getStartLatitude(),
-                        request.getStartLongitude()
+                        request.transportId(),
+                        request.startLatitude(),
+                        request.startLongitude()
                 );
                 rentals.add(rental);
             } catch (Exception e) {

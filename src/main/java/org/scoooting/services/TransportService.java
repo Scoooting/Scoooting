@@ -139,34 +139,34 @@ public class TransportService {
     // Converter methods
     private TransportDTO scooterToTransport(ScootersDTO scooter) {
         return TransportDTO.builder()
-                .id(scooter.getId())
-                .model(scooter.getModel())
+                .id(scooter.id())
+                .model(scooter.model())
                 .type(TransportType.SCOOTER)
-                .status(mapScooterStatus(scooter.getStatus()))
-                .latitude(scooter.getLatitude())
-                .longitude(scooter.getLongitude())
+                .status(mapScooterStatus(scooter.status()))
+                .latitude(scooter.latitude())
+                .longitude(scooter.longitude())
                 .build();
     }
 
     private TransportDTO bikeToTransport(BikeDTO bike) {
         return TransportDTO.builder()
-                .id(bike.getId())
-                .model(bike.getModel())
-                .type(bike.getIsElectric() ? TransportType.E_BIKE : TransportType.BICYCLE)
-                .status(mapBikeStatus(bike.getStatus()))
-                .latitude(bike.getLatitude())
-                .longitude(bike.getLongitude())
+                .id(bike.id())
+                .model(bike.model())
+                .type(bike.isElectric() ? TransportType.E_BIKE : TransportType.BICYCLE)
+                .status(mapBikeStatus(bike.status()))
+                .latitude(bike.latitude())
+                .longitude(bike.longitude())
                 .build();
     }
 
     private TransportDTO motorcycleToTransport(MotorcycleDTO motorcycle) {
         return TransportDTO.builder()
-                .id(motorcycle.getId())
-                .model(motorcycle.getModel())
+                .id(motorcycle.id())
+                .model(motorcycle.model())
                 .type(TransportType.MOTORCYCLE)
-                .status(mapMotorcycleStatus(motorcycle.getStatus()))
-                .latitude(motorcycle.getLatitude())
-                .longitude(motorcycle.getLongitude())
+                .status(mapMotorcycleStatus(motorcycle.status()))
+                .latitude(motorcycle.latitude())
+                .longitude(motorcycle.longitude())
                 .build();
     }
 

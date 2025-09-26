@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,11 +82,10 @@ public class RentalService {
 
         // Calculate duration and cost
         LocalDateTime endTime = LocalDateTime.now();
-        long minutes = ChronoUnit.MINUTES.between(rental.getStartTime(), endTime);
+        long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
 
-        if (minutes > MAX_RENTAL_HOURS * 60) {
+        if (minutes > MAX_RENTAL_HOURS * 60)
             throw new IllegalStateException("Rental exceeded maximum duration");
-        }
 
         BigDecimal totalCost = UNLOCK_FEE.add(BASE_RATE.multiply(BigDecimal.valueOf(minutes)));
 

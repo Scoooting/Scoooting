@@ -1,31 +1,24 @@
 package org.scoooting.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.scoooting.entities.enums.RentalStatus;
 import org.scoooting.entities.enums.TransportType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class RentalDTO {
-    private Long id;
-    private Long userId;
-    private Long transportId;
-    private TransportType transportType;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private Double startLatitude;
-    private Double startLongitude;
-    private Double endLatitude;
-    private Double endLongitude;
-    private BigDecimal totalCost;
-    private Integer durationMinutes;
-    private RentalStatus status;
-}
+public record RentalDTO(
+        Long id,
+         Long userId,
+         Long transportId,
+         TransportType transportType,
+         LocalDateTime startTime,
+         LocalDateTime endTime,
+         Double startLatitude,
+         Double startLongitude,
+         Double endLatitude,
+         Double endLongitude,
+         BigDecimal totalCost,
+         Integer durationMinutes,
+         RentalStatus status) {}
