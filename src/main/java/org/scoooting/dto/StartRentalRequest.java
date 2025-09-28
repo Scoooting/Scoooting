@@ -1,12 +1,14 @@
 package org.scoooting.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 
-@Data
-@Builder
-public class StartRentalRequest {
-    private Long transportId;
-    private Double startLatitude;
-    private Double startLongitude;
-}
+public record StartRentalRequest(
+        @NotNull
+        Long transportId,
+
+        @NotNull
+        Float startLatitude,
+
+        @NotNull
+        Float startLongitude
+) {}

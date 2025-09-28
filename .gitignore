@@ -1,6 +1,7 @@
 .gradle
 .idea
 build
+gradle
 HELP.md
 **/*.iml
 **/application-dev.yml

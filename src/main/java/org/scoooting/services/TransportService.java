@@ -28,25 +28,21 @@ public class TransportService {
      * Find all nearest transports (aggregates from all types)
      */
     public List<TransportDTO> findNearestTransports(float lat, float lon) {
-        List<TransportDTO> allTransports = new ArrayList<>();
 
         // Get scooters and convert to TransportDTO
         List<ScootersDTO> scooters = scooterService.findNearestScooters(lat, lon);
-        allTransports.addAll(scooters.stream()
-                .map(this::scooterToTransport)
-                .collect(Collectors.toList()));
+        List<TransportDTO> allTransports = scooters.stream()
+                .map(this::scooterToTransport).collect(Collectors.toList());
 
         // Get bikes and convert to TransportDTO
         List<BikeDTO> bikes = bikeService.findNearestBikes(lat, lon, 2000);
         allTransports.addAll(bikes.stream()
-                .map(this::bikeToTransport)
-                .collect(Collectors.toList()));
+                .map(this::bikeToTransport).toList());
 
         // Get motorcycles and convert to TransportDTO
         List<MotorcycleDTO> motorcycles = motorcycleService.findNearestMotorcycles(lat, lon, 2000);
         allTransports.addAll(motorcycles.stream()
-                .map(this::motorcycleToTransport)
-                .collect(Collectors.toList()));
+                .map(this::motorcycleToTransport).toList());
 
         return allTransports;
     }
@@ -139,34 +135,34 @@ public class TransportService {
     // Converter methods
     private TransportDTO scooterToTransport(ScootersDTO scooter) {
         return TransportDTO.builder()
-                .id(scooter.getId())
-                .model(scooter.getModel())
+                .id(scooter.id())
+                .model(scooter.model())
                 .type(TransportType.SCOOTER)
-                .status(mapScooterStatus(scooter.getStatus()))
-                .latitude(scooter.getLatitude())
-                .longitude(scooter.getLongitude())
+                .status(mapScooterStatus(scooter.status()))
+                .latitude(scooter.latitude())
+                .longitude(scooter.longitude())
                 .build();
     }
 
     private TransportDTO bikeToTransport(BikeDTO bike) {
         return TransportDTO.builder()
-                .id(bike.getId())
-                .model(bike.getModel())
-                .type(bike.getIsElectric() ? TransportType.E_BIKE : TransportType.BICYCLE)
-                .status(mapBikeStatus(bike.getStatus()))
-                .latitude(bike.getLatitude())
-                .longitude(bike.getLongitude())
+                .id(bike.id())
+                .model(bike.model())
+                .type(bike.isElectric() ? TransportType.E_BIKE : TransportType.BICYCLE)
+                .status(mapBikeStatus(bike.status()))
+                .latitude(bike.latitude())
+                .longitude(bike.longitude())
                 .build();
     }
 
     private TransportDTO motorcycleToTransport(MotorcycleDTO motorcycle) {
         return TransportDTO.builder()
-                .id(motorcycle.getId())
-                .model(motorcycle.getModel())
+                .id(motorcycle.id())
+                .model(motorcycle.model())
                 .type(TransportType.MOTORCYCLE)
-                .status(mapMotorcycleStatus(motorcycle.getStatus()))
-                .latitude(motorcycle.getLatitude())
-                .longitude(motorcycle.getLongitude())
+                .status(mapMotorcycleStatus(motorcycle.status()))
+                .latitude(motorcycle.latitude())
+                .longitude(motorcycle.longitude())
                 .build();
     }
 

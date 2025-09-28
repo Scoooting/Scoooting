@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/app/scooters")
+@RequestMapping("/api/scooters")
 public class ScootersController {
 
     private final ScooterService scooterService;

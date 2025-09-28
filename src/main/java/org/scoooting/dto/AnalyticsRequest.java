@@ -1,15 +1,19 @@
 package org.scoooting.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-public class AnalyticsRequest {
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
-    private Integer minRentals;
-    private Integer limit;
-}
+public record AnalyticsRequest (
+        @NotNull
+        LocalDateTime startDate,
+
+        @NotNull
+        LocalDateTime endDate,
+
+        @NotNull
+        Integer minRentals,
+
+        @NotNull
+        Integer limit
+) {}

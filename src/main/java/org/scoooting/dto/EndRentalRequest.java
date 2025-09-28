@@ -1,11 +1,5 @@
 package org.scoooting.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import jakarta.validation.constraints.NotNull;
 
-@Data
-@Builder
-public class EndRentalRequest {
-    private Double endLatitude;
-    private Double endLongitude;
-}
+public record EndRentalRequest(@NotNull Float endLatitude, @NotNull Float endLongitude) {}

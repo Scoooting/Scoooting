@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +44,7 @@ public class RentalService {
      * Start a new rental - Complex transaction handling multiple entities
      */
     @Transactional
-    public RentalDTO startRental(Long userId, Long transportId, Double startLat, Double startLon) {
+    public RentalDTO startRental(Long userId, Long transportId, Float startLat, Float startLon) {
         // Validate user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -75,18 +75,17 @@ public class RentalService {
      * End rental - Complex calculation and multi-entity update
      */
     @Transactional
-    public RentalDTO endRental(Long userId, Double endLat, Double endLon) {
+    public RentalDTO endRental(Long userId, Float endLat, Float endLon) {
         // Find active rental
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));
 
         // Calculate duration and cost
         LocalDateTime endTime = LocalDateTime.now();
-        long minutes = ChronoUnit.MINUTES.between(rental.getStartTime(), endTime);
+        long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
 
-        if (minutes > MAX_RENTAL_HOURS * 60) {
+        if (minutes > MAX_RENTAL_HOURS * 60)
             throw new IllegalStateException("Rental exceeded maximum duration");
-        }
 
         BigDecimal totalCost = UNLOCK_FEE.add(BASE_RATE.multiply(BigDecimal.valueOf(minutes)));
 

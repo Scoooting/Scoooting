@@ -1,7 +1,7 @@
 -- Create bikes table
 create table if not exists bikes (
     id BIGSERIAL PRIMARY KEY,
-    model VARCHAR(255) NOT NULL,
+    model VARCHAR(64) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'FREE',
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
@@ -12,7 +12,7 @@ create table if not exists bikes (
 -- Create motorcycles table
 CREATE TABLE motorcycles (
     id BIGSERIAL PRIMARY KEY,
-    model VARCHAR(255) NOT NULL,
+    model VARCHAR(64) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'FREE',
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
