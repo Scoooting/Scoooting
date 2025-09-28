@@ -44,7 +44,7 @@ public class RentalService {
      * Start a new rental - Complex transaction handling multiple entities
      */
     @Transactional
-    public RentalDTO startRental(Long userId, Long transportId, Double startLat, Double startLon) {
+    public RentalDTO startRental(Long userId, Long transportId, Float startLat, Float startLon) {
         // Validate user
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -75,7 +75,7 @@ public class RentalService {
      * End rental - Complex calculation and multi-entity update
      */
     @Transactional
-    public RentalDTO endRental(Long userId, Double endLat, Double endLon) {
+    public RentalDTO endRental(Long userId, Float endLat, Float endLon) {
         // Find active rental
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));

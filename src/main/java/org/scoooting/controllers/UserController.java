@@ -18,7 +18,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<UserDTO>> getUsers(
+    public ResponseEntity<?> getUsers(
             @RequestParam(defaultValue = "50") @Min(1) @Max(50) int limit,
             @RequestParam(defaultValue = "0") @Min(0) int offset
     ) {
@@ -31,13 +31,13 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
         UserDTO user = userService.findUserById(id);
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<UserDTO> findUserByEmail(@RequestParam String email) {
+    public ResponseEntity<?> findUserByEmail(@RequestParam String email) {
         UserDTO user = userService.findUserByEmail(email);
         return ResponseEntity.ok(user);
     }

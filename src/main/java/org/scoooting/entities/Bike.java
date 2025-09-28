@@ -27,10 +27,10 @@ public class Bike {
     private BikeStatus status;
 
     @NotNull
-    private Double latitude;
+    private Float latitude;
 
     @NotNull
-    private Double longitude;
+    private Float longitude;
     private Integer gearCount;
     private Boolean isElectric;
 }

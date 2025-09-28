@@ -14,10 +14,10 @@ import java.util.List;
  */
 public class TransportAPI {
 
-    private static final double SPB_LATITUDE_MIN = 59.823535;
-    private static final double SPB_LATITUDE_MAX = 60.041664;
-    private static final double SPB_LONGITUDE_MIN = 30.184844;
-    private static final double SPB_LONGITUDE_MAX = 30.431322;
+    protected static final double SPB_LATITUDE_MIN = 59.823535;
+    protected static final double SPB_LATITUDE_MAX = 60.041664;
+    protected static final double SPB_LONGITUDE_MIN = 30.184844;
+    protected static final double SPB_LONGITUDE_MAX = 30.431322;
 
     /**
      * Generate diverse transport fleet for testing
@@ -27,8 +27,8 @@ public class TransportAPI {
 
         // Generate different types of transport
         for (long i = 1; i <= 100; i++) {
-            double latitude = Math.random() * (SPB_LATITUDE_MAX - SPB_LATITUDE_MIN) + SPB_LATITUDE_MIN;
-            double longitude = Math.random() * (SPB_LONGITUDE_MAX - SPB_LONGITUDE_MIN) + SPB_LONGITUDE_MAX;
+            float latitude = (float) (Math.random() * (SPB_LATITUDE_MAX - SPB_LATITUDE_MIN) + SPB_LATITUDE_MIN);
+            float longitude = (float) (Math.random() * (SPB_LONGITUDE_MAX - SPB_LONGITUDE_MIN) + SPB_LONGITUDE_MAX);
 
             Transport transport = createRandomTransport(i, latitude, longitude);
             transport.setId(null);
@@ -38,7 +38,7 @@ public class TransportAPI {
         return transports;
     }
 
-    private Transport createRandomTransport(long id, double latitude, double longitude) {
+    private Transport createRandomTransport(long id, float latitude, float longitude) {
         TransportType[] types = TransportType.values();
         TransportType type = types[(int) (Math.random() * types.length)];
 

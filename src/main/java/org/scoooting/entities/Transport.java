@@ -36,10 +36,10 @@ public class Transport {
     private TransportStatus status;
 
     @NotNull
-    private Double latitude;
+    private Float latitude;
 
     @NotNull
-    private Double longitude;
+    private Float longitude;
 
     private BigDecimal batteryLevel; // For electric vehicles
     private String serialNumber;

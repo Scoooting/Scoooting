@@ -29,10 +29,10 @@ public class Motorcycle {
     private MotorcycleStatus status;
 
     @NotNull
-    private Double latitude;
+    private Float latitude;
 
     @NotNull
-    private Double longitude;
+    private Float longitude;
     private Integer engineSize; // in cc
     private BigDecimal fuelLevel; // percentage
 }

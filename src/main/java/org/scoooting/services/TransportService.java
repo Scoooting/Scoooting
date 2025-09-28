@@ -28,25 +28,21 @@ public class TransportService {
      * Find all nearest transports (aggregates from all types)
      */
     public List<TransportDTO> findNearestTransports(float lat, float lon) {
-        List<TransportDTO> allTransports = new ArrayList<>();
 
         // Get scooters and convert to TransportDTO
         List<ScootersDTO> scooters = scooterService.findNearestScooters(lat, lon);
-        allTransports.addAll(scooters.stream()
-                .map(this::scooterToTransport)
-                .collect(Collectors.toList()));
+        List<TransportDTO> allTransports = scooters.stream()
+                .map(this::scooterToTransport).collect(Collectors.toList());
 
         // Get bikes and convert to TransportDTO
         List<BikeDTO> bikes = bikeService.findNearestBikes(lat, lon, 2000);
         allTransports.addAll(bikes.stream()
-                .map(this::bikeToTransport)
-                .collect(Collectors.toList()));
+                .map(this::bikeToTransport).toList());
 
         // Get motorcycles and convert to TransportDTO
         List<MotorcycleDTO> motorcycles = motorcycleService.findNearestMotorcycles(lat, lon, 2000);
         allTransports.addAll(motorcycles.stream()
-                .map(this::motorcycleToTransport)
-                .collect(Collectors.toList()));
+                .map(this::motorcycleToTransport).toList());
 
         return allTransports;
     }

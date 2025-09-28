@@ -13,8 +13,8 @@ public record TransportDTO(
         String model,
         TransportType type,
         TransportStatus status,
-        Double latitude,
-        Double longitude,
+        Float latitude,
+        Float longitude,
         BigDecimal batteryLevel,
         String serialNumber,
         LocalDateTime lastMaintenanceDate

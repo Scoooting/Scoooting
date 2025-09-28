@@ -7,8 +7,8 @@ public record StartRentalRequest(
         Long transportId,
 
         @NotNull
-        Double startLatitude,
+        Float startLatitude,
 
         @NotNull
-        Double startLongitude
+        Float startLongitude
 ) {}

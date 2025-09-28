@@ -41,13 +41,13 @@ public class Rental {
     private LocalDateTime endTime;
 
     @NotNull
-    private Double startLatitude;
+    private Float startLatitude;
 
     @NotNull
-    private Double startLongitude;
+    private Float startLongitude;
 
-    private Double endLatitude;
-    private Double endLongitude;
+    private Float endLatitude;
+    private Float endLongitude;
     private BigDecimal totalCost;
     private Integer durationMinutes;
 
@@ -56,7 +56,7 @@ public class Rental {
     private RentalStatus status;
 
     public Rental(Long userId, Long transportId, TransportType transportType,
-                  Double startLatitude, Double startLongitude) {
+                  Float startLatitude, Float startLongitude) {
         this.userId = userId;
         this.transportId = transportId;
         this.transportType = transportType;
