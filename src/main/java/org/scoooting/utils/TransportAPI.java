@@ -68,6 +68,7 @@ public class TransportAPI {
             case BICYCLE -> "Trek FX " + (id % 4 + 1);
             case E_BIKE -> "RadRunner " + (id % 2 + 1);
             case MOTORCYCLE -> "Honda CB" + (100 + id % 50);
+            default -> "No name";
         };
     }
 

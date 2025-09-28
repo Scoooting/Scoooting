@@ -91,14 +91,10 @@ public class TransportService {
      */
     public List<TransportDTO> findTransportsInCity(String city, int offset, int limit) {
         // For simplicity, get scooters from city (bikes/motorcycles would need similar methods)
-        List<TransportDTO> cityTransports = new ArrayList<>();
 
         List<ScootersDTO> scooters = scooterService.findScootersInCity(city, offset, limit);
-        cityTransports.addAll(scooters.stream()
-                .map(this::scooterToTransport)
-                .collect(Collectors.toList()));
 
-        return cityTransports;
+        return new ArrayList<>(scooters.stream().map(this::scooterToTransport).toList());
     }
 
     /**
