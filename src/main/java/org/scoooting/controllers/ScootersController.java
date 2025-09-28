@@ -19,9 +19,9 @@ public class ScootersController {
     private final ScooterService scooterService;
 
     /**
-     * Возвращает все самокаты в радиусе 2 км
-     * @param lat - координата широты пользователя
-     * @param lon - координата долготы пользователя
+     * Returns all scooters in 2km range
+     * @param lat - user's latitude
+     * @param lon - user's longitude
      */
     @GetMapping("/nearestScooters")
     public ResponseEntity<List<ScootersDTO>> findNearestScooters(@RequestParam float lat, @RequestParam float lon) {
@@ -29,7 +29,7 @@ public class ScootersController {
     }
 
     /**
-     * Возвращает часть самокатов, находящихся в указанном городе
+     * Returns scooters in specified city
      */
     @GetMapping("/scootersInCity")
     public ResponseEntity<List<ScootersDTO>> findScootersInCity(@RequestParam String city,

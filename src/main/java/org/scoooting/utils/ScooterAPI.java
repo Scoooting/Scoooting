@@ -7,13 +7,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Класс, который работает со встроенной системой в самокатах. Содержит методы по получению информации с самокатов,
- * находящихся в базе. В данном проекте жёстко захардкожен.
+ * Class, that works with scooters system info.
+ * Hardcoded, to fill up scooters with temporary (random) data.
  */
 public class ScooterAPI extends TransportAPI {
 
     /**
-     * @return список всех найденных (захардкоженных) ближайших самокатов
+     * @return list of all nearest scooters found
      */
     public List<Scooter> findNearestScooters() {
         List<Scooter> scooters = new LinkedList<>();
