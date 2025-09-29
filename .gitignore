@@ -4,3 +4,6 @@ build
 HELP.md
 **/*.iml
 **/application-dev.yml
+**/*.env
+*.env
+.env

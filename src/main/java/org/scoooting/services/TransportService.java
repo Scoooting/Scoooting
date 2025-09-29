@@ -1,193 +1,110 @@
 package org.scoooting.services;
 
 import lombok.RequiredArgsConstructor;
-import org.scoooting.dto.BikeDTO;
-import org.scoooting.dto.MotorcycleDTO;
-import org.scoooting.dto.ScootersDTO;
-import org.scoooting.dto.TransportDTO;
+import org.scoooting.dto.response.TransportResponseDTO;
+import org.scoooting.entities.City;
 import org.scoooting.entities.Transport;
+import org.scoooting.entities.TransportStatus;
 import org.scoooting.entities.enums.*;
+import org.scoooting.exceptions.common.DataNotFoundException;
+import org.scoooting.exceptions.transport.TransportNotFoundException;
 import org.scoooting.mappers.TransportMapper;
+import org.scoooting.repositories.CityRepository;
 import org.scoooting.repositories.TransportRepository;
+import org.scoooting.repositories.TransportStatusRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TransportService {
 
     private final TransportRepository transportRepository;
+    private final TransportStatusRepository statusRepository;
+    private final CityRepository cityRepository;
     private final TransportMapper transportMapper;
-    private final ScooterService scooterService;
-    private final BikeService bikeService;
-    private final MotorcycleService motorcycleService;
 
-    /**
-     * Find all nearest transports (aggregates from all types)
-     */
-    public List<TransportDTO> findNearestTransports(float lat, float lon) {
+    @Transactional(readOnly = true)
+    public List<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
+        // Calculate boundaries
+        double latRange = radiusKm / 111.0;
+        double lngRange = radiusKm / (111.0 * Math.cos(Math.toRadians(lat)));
 
-        // Get scooters and convert to TransportDTO
-        List<ScootersDTO> scooters = scooterService.findNearestScooters(lat, lon);
-        List<TransportDTO> allTransports = scooters.stream()
-                .map(this::scooterToTransport).collect(Collectors.toList());
+        List<Transport> transports = transportRepository.findAvailableInArea(
+                lat - latRange, lat + latRange,
+                lng - lngRange, lng + lngRange
+        );
 
-        // Get bikes and convert to TransportDTO
-        List<BikeDTO> bikes = bikeService.findNearestBikes(lat, lon, 2000);
-        allTransports.addAll(bikes.stream()
-                .map(this::bikeToTransport).toList());
-
-        // Get motorcycles and convert to TransportDTO
-        List<MotorcycleDTO> motorcycles = motorcycleService.findNearestMotorcycles(lat, lon, 2000);
-        allTransports.addAll(motorcycles.stream()
-                .map(this::motorcycleToTransport).toList());
-
-        return allTransports;
+        return transports.stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
 
-    /**
-     * Find nearest transports by specific type
-     */
-    public List<TransportDTO> findNearestTransportsByType(float lat, float lon, int radius, TransportType type) {
-        return switch (type) {
-            case SCOOTER -> scooterService.findNearestScooters(lat, lon).stream()
-                    .map(this::scooterToTransport)
-                    .collect(Collectors.toList());
-            case BICYCLE -> bikeService.findNearestBikes(lat, lon, radius).stream()
-                    .map(this::bikeToTransport)
-                    .collect(Collectors.toList());
-            case MOTORCYCLE -> motorcycleService.findNearestMotorcycles(lat, lon, radius).stream()
-                    .map(this::motorcycleToTransport)
-                    .collect(Collectors.toList());
-            default -> throw new IllegalArgumentException("Transport type not supported: " + type);
-        };
+    @Transactional(readOnly = true)
+    public List<TransportResponseDTO> findTransportsByType(
+            TransportType type, Double lat, Double lng, Double radiusKm
+    ) {
+        double latRange = radiusKm / 111.0;
+        double lngRange = radiusKm / (111.0 * Math.cos(Math.toRadians(lat)));
+
+        List<Transport> transports = transportRepository.findAvailableByTypeInArea(
+                type, lat - latRange, lat + latRange, lng - lngRange, lng + lngRange
+        );
+
+        return transports.stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
 
-    /**
-     * Get transport by ID and type
-     */
-    public TransportDTO getTransportById(Long id, TransportType type) {
-        return switch (type) {
-            case SCOOTER -> {
-                ScootersDTO scooter = scooterService.findScooterById(id);
-                yield scooterToTransport(scooter);
-            }
-            case BICYCLE -> {
-                BikeDTO bike = bikeService.findBikeById(id);
-                yield bikeToTransport(bike);
-            }
-            case MOTORCYCLE -> {
-                MotorcycleDTO motorcycle = motorcycleService.findMotorcycleById(id);
-                yield motorcycleToTransport(motorcycle);
-            }
-            default -> throw new IllegalArgumentException("Transport type not supported: " + type);
-        };
+    @Transactional(readOnly = true)
+    public TransportResponseDTO getTransportById(Long id) {
+        Transport transport = transportRepository.findById(id)
+                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
+        return toResponseDTO(transport);
     }
 
-    /**
-     * Find transports in city (aggregates all types)
-     */
-    public List<TransportDTO> findTransportsInCity(String city, int offset, int limit) {
-        // For simplicity, get scooters from city (bikes/motorcycles would need similar methods)
-        List<TransportDTO> cityTransports = new ArrayList<>();
-
-        List<ScootersDTO> scooters = scooterService.findScootersInCity(city, offset, limit);
-        cityTransports.addAll(scooters.stream()
-                .map(this::scooterToTransport)
-                .collect(Collectors.toList()));
-
-        return cityTransports;
+    @Transactional(readOnly = true)
+    public List<TransportResponseDTO> findAvailableTransportsByType(TransportType type) {
+        List<Transport> transports = transportRepository.findAvailableByType(type);
+        return transports.stream()
+                .map(this::toResponseDTO)
+                .toList();
     }
 
-    /**
-     * Find available transports by type
-     */
-    public List<TransportDTO> findAvailableTransportsByType(TransportType type) {
-        return switch (type) {
-            case SCOOTER -> scooterService.findAvailableScooters().stream()
-                    .map(this::scooterToTransport)
-                    .collect(Collectors.toList());
-            case BICYCLE -> bikeService.findAvailableBikes().stream()
-                    .map(this::bikeToTransport)
-                    .collect(Collectors.toList());
-            case MOTORCYCLE -> motorcycleService.findAvailableMotorcycles().stream()
-                    .map(this::motorcycleToTransport)
-                    .collect(Collectors.toList());
-            default -> throw new IllegalArgumentException("Transport type not supported: " + type);
-        };
-    }
+    @Transactional(readOnly = true)
+    public Map<String, Long> getAvailabilityStats() {
+        Map<String, Long> stats = new HashMap<>();
 
-    /**
-     * Get availability stats for all transport types
-     */
-    public Map<TransportType, Long> getAvailabilityStats() {
-        Map<TransportType, Long> stats = new HashMap<>();
-
-        stats.put(TransportType.SCOOTER, scooterService.getAvailableCount());
-        stats.put(TransportType.BICYCLE, bikeService.getAvailableCount());
-        stats.put(TransportType.MOTORCYCLE, motorcycleService.getAvailableCount());
+        for (TransportType type : TransportType.values()) {
+            long count = transportRepository.countAvailableByType(type);
+            stats.put(type.name(), count);
+        }
 
         return stats;
     }
 
-    // Converter methods
-    private TransportDTO scooterToTransport(ScootersDTO scooter) {
-        return TransportDTO.builder()
-                .id(scooter.id())
-                .model(scooter.model())
-                .type(TransportType.SCOOTER)
-                .status(mapScooterStatus(scooter.status()))
-                .latitude(scooter.latitude())
-                .longitude(scooter.longitude())
-                .build();
+    public TransportResponseDTO updateTransportStatus(Long transportId, String statusName) {
+        Transport transport = transportRepository.findById(transportId)
+                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
+
+        TransportStatus status = statusRepository.findByName(statusName)
+                .orElseThrow(() -> new DataNotFoundException("Status not found"));
+
+        transport.setStatusId(status.getId());
+        transport = transportRepository.save(transport);
+
+        return toResponseDTO(transport);
     }
 
-    private TransportDTO bikeToTransport(BikeDTO bike) {
-        return TransportDTO.builder()
-                .id(bike.id())
-                .model(bike.model())
-                .type(bike.isElectric() ? TransportType.E_BIKE : TransportType.BICYCLE)
-                .status(mapBikeStatus(bike.status()))
-                .latitude(bike.latitude())
-                .longitude(bike.longitude())
-                .build();
-    }
-
-    private TransportDTO motorcycleToTransport(MotorcycleDTO motorcycle) {
-        return TransportDTO.builder()
-                .id(motorcycle.id())
-                .model(motorcycle.model())
-                .type(TransportType.MOTORCYCLE)
-                .status(mapMotorcycleStatus(motorcycle.status()))
-                .latitude(motorcycle.latitude())
-                .longitude(motorcycle.longitude())
-                .build();
-    }
-
-    // Status mapping methods
-    private TransportStatus mapScooterStatus(ScootersStatus status) {
-        return switch (status) {
-            case FREE -> TransportStatus.AVAILABLE;
-            case BUSY -> TransportStatus.IN_USE;
-            case NONACTIVE, MAINTENANCE, LOW_BATTERY, DAMAGED -> TransportStatus.UNAVAILABLE;
-        };
-    }
-
-    private TransportStatus mapBikeStatus(BikeStatus status) {
-        return switch (status) {
-            case FREE -> TransportStatus.AVAILABLE;
-            case BUSY -> TransportStatus.IN_USE;
-            case NONACTIVE, MAINTENANCE, FLAT_TIRE -> TransportStatus.UNAVAILABLE;
-        };
-    }
-
-    private TransportStatus mapMotorcycleStatus(MotorcycleStatus status) {
-        return switch (status) {
-            case FREE -> TransportStatus.AVAILABLE;
-            case BUSY -> TransportStatus.IN_USE;
-            case NONACTIVE, MAINTENANCE, LOW_FUEL, ENGINE_FAULT -> TransportStatus.UNAVAILABLE;
-        };
+    private TransportResponseDTO toResponseDTO(Transport transport) {
+        String statusName = statusRepository.findById(transport.getStatusId())
+                .map(TransportStatus::getName).orElse("UNKNOWN");
+        String cityName = transport.getCityId() != null ?
+                cityRepository.findById(transport.getCityId()).map(City::getName).orElse(null) : null;
+        return transportMapper.toResponseDTO(transport, statusName, cityName);
     }
 }

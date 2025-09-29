@@ -4,8 +4,8 @@ select
     '${adminEmail}',
     '${adminUsername}',
     '${adminPassword}',
-    r.id,
-    c.id,
+    (select id from user_roles where name = 'ADMIN'),
+    (select id from cities where name = 'SPB'),
     0
 from user_roles r, cities c
 where r.name = 'ADMIN'
