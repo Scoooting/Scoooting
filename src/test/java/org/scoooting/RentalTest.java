@@ -4,12 +4,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.scoooting.controllers.RentalController;
+import org.scoooting.dto.request.StartRentalRequestDTO;
+import org.scoooting.dto.response.RentalResponseDTO;
 import org.scoooting.entities.Transport;
+import org.scoooting.entities.User;
 import org.scoooting.entities.enums.*;
-import org.scoooting.repositories.BikeRepository;
-import org.scoooting.repositories.MotorcycleRepository;
-import org.scoooting.repositories.ScooterRepository;
-import org.scoooting.repositories.TransportRepository;
+import org.scoooting.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -17,6 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -28,26 +30,51 @@ public class RentalTest {
     private RentalController rentalController;
 
     @Autowired
+    private UserRepository userRepository;
+    @Autowired
     private TransportRepository transportRepository;
 
-    private final Float lat = 59.95662F;
-    private final Float lon = 30.398804F;
-    private final int radius = 2000;
+    private final Double lat = 59.95662;
+    private final Double lon = 30.398804;
+    private final Double radius = 2.0;
+    private final String testName = "user";
+    private final String testEmail = "user1@example.com";
+    private final String testPassword = "passHash";
 
-    private List<Transport> testTransportList = new ArrayList<>();
+    private List<Long> transportsIds = new ArrayList<>();
 
     @BeforeAll
     void setUp() {
-        List<Transport> transports = (List<Transport>) transportRepository.findAll();
         for (TransportType type : TransportType.values()) {
-            Transport transport = transports.stream().filter(e -> e.getType() == type).findFirst().orElseThrow();
+            Transport transport = transportRepository.findAvailableByType(type).get(0);
             transport.setLatitude(lat);
             transport.setLongitude(lon);
+            transportRepository.save(transport);
+            transportsIds.add(transport.getId());
         }
+
+        userRepository.save(User.builder()
+                .id(1L)
+                .name(testName)
+                .email(testEmail)
+                .passwordHash(testPassword)
+                .roleId(1L)
+                .cityId(1L)
+                .bonuses(0)
+                .build());
     }
 
     @Test
     void startRentalTest() {
-        System.out.println(testTransportList);
+        for (Long id : transportsIds) {
+            RentalResponseDTO rentalResponseDTO = rentalController.startRental(new StartRentalRequestDTO(1, id, lat, lon));
+            assertAll(
+                    () -> assertEquals(1, rentalResponseDTO.userId()),
+                    () -> assertEquals(testName, rentalResponseDTO.userName()),
+                    () -> assertEquals(id, rentalResponseDTO.transportId()),
+                    () -> assertEquals('ACTIVE', rentalResponseDTO.st)
+            );
+        }
+
     }
 }

@@ -1,8 +1,3 @@
-insert into transport_statuses (name) values
-    ('AVAILABLE'),
-    ('IN_USE'),
-    ('UNAVAILABLE');
-
 do $$
     declare
         transport_name text;
@@ -11,11 +6,11 @@ do $$
     begin
         foreach transport_name in array transport_types
             loop
-                insert into transports (type, status_id, city_id, latitude, longitude)
+                insert into transports (transport_type, status_id, city_id, latitude, longitude)
                 select
                     transport_name,
-                    (select id from transport_statuses where name = 'available'),
-                    (select id from cities where name = 'spb'),
+                    (select id from transport_statuses where name = 'AVAILABLE'),
+                    (select id from cities where name = 'SPB'),
                     59.823535 + (random() * (60.041664 - 59.823535)),
                     30.184844 + (random() * (30.431322 - 30.184844))
                 from generate_series(1, 30);
@@ -38,14 +33,14 @@ from generate_series(1, 30) gs;
 
 insert into gas_motorcycles (transport_id, model, fuel_level, engine_size)
 select
-    gs + 30,
-    case
-        when gs % 3 = 0 then 'Honda CB' || (125 + (gs % 4) * 125)
-        when gs % 3 = 1 then 'Yamaha YBR' || (125 + (gs % 3) * 125)
-        else 'BMW G 310 R'
-    end,
-    20 + (random() * 80),
-    125 + (gs % 6) * 125
+        gs + 30,
+        case
+            when gs % 3 = 0 then 'Honda CB' || (125 + (gs % 4) * 125)
+            when gs % 3 = 1 then 'Yamaha YBR' || (125 + (gs % 3) * 125)
+            else 'BMW G 310 R'
+            end,
+        20 + (random() * 80),
+        125 + (gs % 6) * 125
 from generate_series(1, 30) gs;
 
 insert into electric_kick_scooters (transport_id, model, battery_level)

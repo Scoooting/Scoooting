@@ -1,19 +1,14 @@
 package org.scoooting.services;
 
 import lombok.RequiredArgsConstructor;
-import org.scoooting.dto.*;
-import org.scoooting.entities.Rental;
-import org.scoooting.entities.Scooter;
-import org.scoooting.entities.Transport;
-import org.scoooting.entities.User;
-import org.scoooting.entities.enums.RentalStatus;
-import org.scoooting.entities.enums.ScootersStatus;
-import org.scoooting.entities.enums.TransportStatus;
+import org.scoooting.dto.common.PageResponseDTO;
+import org.scoooting.dto.response.RentalResponseDTO;
+import org.scoooting.entities.*;
+import org.scoooting.exceptions.common.DataNotFoundException;
+import org.scoooting.exceptions.transport.TransportNotFoundException;
+import org.scoooting.exceptions.user.UserNotFoundException;
 import org.scoooting.mappers.RentalMapper;
-import org.scoooting.repositories.RentalRepository;
-import org.scoooting.repositories.ScooterRepository;
-import org.scoooting.repositories.TransportRepository;
-import org.scoooting.repositories.UserRepository;
+import org.scoooting.repositories.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,52 +25,66 @@ import java.util.stream.Collectors;
 @Transactional
 public class RentalService {
 
-    private final TransportRepository transportRepository;
     private final RentalRepository rentalRepository;
-    private final ScooterRepository scooterRepository;
+    private final TransportRepository transportRepository;
     private final UserRepository userRepository;
+    private final TransportStatusRepository transportStatusRepository;
+    private final RentalStatusRepository rentalStatusRepository;
     private final RentalMapper rentalMapper;
 
     private static final BigDecimal BASE_RATE = new BigDecimal("0.50"); // 50 cents per minute
     private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00"); // $1 unlock fee
-    private static final int MAX_RENTAL_HOURS = 24; // Maximum rental duration
 
-    /**
-     * Start a new rental - Complex transaction handling multiple entities
-     */
     @Transactional
-    public RentalDTO startRental(Long userId, Long transportId, Float startLat, Float startLon) {
-        // Validate user
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    public RentalResponseDTO startRental(Long userId, Long transportId, Double startLat, Double startLng) {
+        // Validate user exists
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException("User not found");
+        }
 
+        // Check if user already has active rental
         if (rentalRepository.findActiveRentalByUserId(userId).isPresent()) {
             throw new IllegalStateException("User already has an active rental");
         }
 
+        // Validate transport
         Transport transport = transportRepository.findById(transportId)
-                .orElseThrow(() -> new IllegalArgumentException("Transport not found"));
+                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
 
-        if (transport.getStatus() != TransportStatus.AVAILABLE) {
+        // Check if transport is available
+        TransportStatus availableStatus = transportStatusRepository.findByName("AVAILABLE")
+                .orElseThrow(() -> new DataNotFoundException("AVAILABLE status not found"));
+
+        if (!transport.getStatusId().equals(availableStatus.getId())) {
             throw new IllegalStateException("Transport is not available for rental");
         }
 
-        // Create rental with transport type
-        Rental rental = new Rental(userId, transportId, transport.getType(), startLat, startLon);
+        // Create rental
+        Rental rental = new Rental();
+        rental.setUserId(userId);
+        rental.setTransportId(transportId);
+        rental.setStartLatitude(startLat);
+        rental.setStartLongitude(startLng);
+        rental.setStartTime(LocalDateTime.now());
+
+        // Set ACTIVE status
+        RentalStatus activeStatus = rentalStatusRepository.findByName("ACTIVE")
+                .orElseThrow(() -> new DataNotFoundException("ACTIVE status not found"));
+        rental.setStatusId(activeStatus.getId());
+
         rental = rentalRepository.save(rental);
 
-        // Update transport status
-        transport.setStatus(TransportStatus.IN_USE);
+        // Update transport to IN_USE
+        TransportStatus inUseStatus = transportStatusRepository.findByName("IN_USE")
+                .orElseThrow(() -> new DataNotFoundException("IN_USE status not found"));
+        transport.setStatusId(inUseStatus.getId());
         transportRepository.save(transport);
 
-        return rentalMapper.toDTO(rental);
+        return toResponseDTO(rental);
     }
 
-    /**
-     * End rental - Complex calculation and multi-entity update
-     */
     @Transactional
-    public RentalDTO endRental(Long userId, Float endLat, Float endLon) {
+    public RentalResponseDTO endRental(Long userId, Double endLat, Double endLng) {
         // Find active rental
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));
@@ -83,195 +92,117 @@ public class RentalService {
         // Calculate duration and cost
         LocalDateTime endTime = LocalDateTime.now();
         long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
-
-        if (minutes > MAX_RENTAL_HOURS * 60)
-            throw new IllegalStateException("Rental exceeded maximum duration");
-
         BigDecimal totalCost = UNLOCK_FEE.add(BASE_RATE.multiply(BigDecimal.valueOf(minutes)));
+
+        // Calculate distance (simple Euclidean distance)
+        double distance = calculateDistance(
+                rental.getStartLatitude(), rental.getStartLongitude(),
+                endLat, endLng
+        );
 
         // Update rental
         rental.setEndTime(endTime);
         rental.setEndLatitude(endLat);
-        rental.setEndLongitude(endLon);
+        rental.setEndLongitude(endLng);
         rental.setDurationMinutes((int) minutes);
         rental.setTotalCost(totalCost);
-        rental.setStatus(RentalStatus.COMPLETED);
+        rental.setDistanceKm(BigDecimal.valueOf(distance));
+
+        // Set COMPLETED status
+        RentalStatus completedStatus = rentalStatusRepository.findByName("COMPLETED")
+                .orElseThrow(() -> new DataNotFoundException("COMPLETED status not found"));
+        rental.setStatusId(completedStatus.getId());
+
         rental = rentalRepository.save(rental);
 
-        // Free up transport and update its location
-        Transport transport = transportRepository.findById(rental.getId())
-                .orElseThrow(() -> new IllegalStateException("Transport not found"));
-        transport.setStatus(TransportStatus.AVAILABLE);
+        // Update transport
+        Transport transport = transportRepository.findById(rental.getTransportId())
+                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
+
+        TransportStatus availableStatus = transportStatusRepository.findByName("AVAILABLE")
+                .orElseThrow(() -> new DataNotFoundException("AVAILABLE status not found"));
+        transport.setStatusId(availableStatus.getId());
         transport.setLatitude(endLat);
-        transport.setLongitude(endLon);
+        transport.setLongitude(endLng);
         transportRepository.save(transport);
 
-        // Award bonus points (1 point per minute)
+        // Award bonus points
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalStateException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
         user.setBonuses(user.getBonuses() + (int) minutes);
         userRepository.save(user);
 
-        return rentalMapper.toDTO(rental);
+        return toResponseDTO(rental);
     }
 
-    /**
-     * Cancel active rental
-     */
     @Transactional
     public void cancelRental(Long userId) {
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found"));
 
-        rental.setStatus(RentalStatus.CANCELLED);
+        // Set CANCELLED status
+        RentalStatus cancelledStatus = rentalStatusRepository.findByName("CANCELLED")
+                .orElseThrow(() -> new DataNotFoundException("CANCELLED status not found"));
+        rental.setStatusId(cancelledStatus.getId());
         rental.setEndTime(LocalDateTime.now());
         rentalRepository.save(rental);
 
         // Free transport
-        Transport transport = transportRepository.findById(rental.getId())
-                .orElseThrow(() -> new IllegalStateException("Transport not found"));
-        transport.setStatus(TransportStatus.AVAILABLE);
+        Transport transport = transportRepository.findById(rental.getTransportId())
+                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
+
+        TransportStatus availableStatus = transportStatusRepository.findByName("AVAILABLE")
+                .orElseThrow(() -> new DataNotFoundException("AVAILABLE status not found"));
+        transport.setStatusId(availableStatus.getId());
         transportRepository.save(transport);
     }
 
-    /**
-     * Get user rental history with pagination
-     */
     @Transactional(readOnly = true)
-    public PaginatedRentalsDTO getUserRentalHistory(Long userId, int offset, int limit) {
-        List<Rental> rentals = rentalRepository.findRentalHistoryByUserId(userId, offset, limit);
-        Long totalCount = rentalRepository.countRentalsByUserId(userId);
-
-        List<RentalDTO> rentalDTOs = rentals.stream()
-                .map(rentalMapper::toDTO)
-                .collect(Collectors.toList());
-
-        return new PaginatedRentalsDTO(rentalDTOs, totalCount);
-    }
-
-    /**
-     * Get current active rental for user
-     */
-    @Transactional(readOnly = true)
-    public Optional<RentalDTO> getActiveRental(Long userId) {
+    public Optional<RentalResponseDTO> getActiveRental(Long userId) {
         return rentalRepository.findActiveRentalByUserId(userId)
-                .map(rentalMapper::toDTO);
+                .map(this::toResponseDTO);
     }
 
-    /**
-     * COMPLEX QUERY 1: Get top users analytics
-     */
     @Transactional(readOnly = true)
-    public List<UserAnalyticsDTO> getTopUsersByUsage(LocalDateTime startDate, LocalDateTime endDate,
-                                                     int minRentals, int limit) {
-        List<Map<String, Object>> results = rentalRepository.findTopUsersByUsageInPeriod(
-                startDate, endDate, minRentals, limit);
+    public PageResponseDTO<RentalResponseDTO> getUserRentalHistory(
+            Long userId, int page, int size
+    ) {
+        int offset = page * size;
+        List<Rental> rentals = rentalRepository.findRentalHistoryByUserId(userId, offset, size);
+        long total = rentalRepository.countRentalsByUserId(userId);
 
-        return results.stream()
-                .map(this::mapToUserAnalyticsDTO)
-                .collect(Collectors.toList());
+        List<RentalResponseDTO> rentalDTOs = rentals.stream()
+                .map(this::toResponseDTO)
+                .toList();
+
+        int totalPages = (int) Math.ceil((double) total / size);
+        return new PageResponseDTO<>(rentalDTOs, page, size, total, totalPages, page == 0, page >= totalPages - 1);
     }
 
-    /**
-     * COMPLEX QUERY 2: Get scooter utilization analytics
-     */
-    @Transactional(readOnly = true)
-    public List<TransportAnalyticsDTO> getTransportUtilizationInArea(Double centerLat, Double centerLon,
-                                                                 Double radiusMeters, LocalDateTime startDate) {
-        List<Map<String, Object>> results = rentalRepository.findTransportUtilizationInArea(
-                centerLat, centerLon, radiusMeters, startDate);
+    private RentalResponseDTO toResponseDTO(Rental rental) {
+        // Get user name
+        String userName = userRepository.findById(rental.getUserId())
+                .map(User::getName).orElse("Unknown User");
 
-        return results.stream()
-                .map(this::mapToTransportAnalyticsDTO)
-                .collect(Collectors.toList());
+        // Get transport type
+        String transportType = transportRepository.findById(rental.getTransportId())
+                .map(t -> t.getTransportType().name()).orElse("UNKNOWN");
+
+        // Get status name
+        String statusName = rentalStatusRepository.findById(rental.getStatusId())
+                .map(RentalStatus::getName).orElse("UNKNOWN");
+
+        return rentalMapper.toResponseDTO(rental, userName, transportType, statusName);
     }
 
-    /**
-     * Get revenue by city for business analytics
-     */
-//    @Transactional(readOnly = true)
-//    public List<CityRevenueDTO> getRevenueByCity(LocalDateTime startDate, LocalDateTime endDate) {
-//        List<Map<String, Object>> results = rentalRepository.findRevenueByCity(startDate, endDate);
-//
-//        return results.stream()
-//                .map(this::mapToCityRevenueDTO)
-//                .collect(Collectors.toList());
-//    }
+    private double calculateDistance(Double lat1, Double lng1, Double lat2, Double lng2) {
+        if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) {
+            return 0.0;
+        }
 
-    /**
-     * Get scooters needing maintenance
-     */
-    @Transactional(readOnly = true)
-    public List<MaintenanceAlertDTO> getTransportsNeedingMaintenance(int maxRentals, int maxMinutes) {
-        LocalDateTime sinceDate = LocalDateTime.now().minusDays(30); // Last 30 days
-        List<Map<String, Object>> results = rentalRepository.findTransportsNeedingMaintenance(
-                sinceDate, maxRentals, maxMinutes);
-
-        return results.stream()
-                .map(this::mapToMaintenanceAlertDTO)
-                .collect(Collectors.toList());
-    }
-
-    // Mapping helper methods
-    private UserAnalyticsDTO mapToUserAnalyticsDTO(Map<String, Object> row) {
-        return UserAnalyticsDTO.builder()
-                .userId(((Number) row.get("id")).longValue())
-                .email((String) row.get("email"))
-                .name((String) row.get("name"))
-                .rentalCount(((Number) row.get("rental_count")).intValue())
-                .totalSpent(new BigDecimal(row.get("total_spent").toString()))
-                .avgDuration(((Number) row.get("avg_duration")).doubleValue())
-                .build();
-    }
-
-    private TransportAnalyticsDTO mapToTransportAnalyticsDTO(Map<String, Object> row) {
-        return TransportAnalyticsDTO.builder()
-                .transportId(((Number) row.get("id")).longValue())
-                .model((String) row.get("model"))
-                .transportType((String) row.get("transport_type"))
-                .latitude(((Number) row.get("latitude")).doubleValue())
-                .longitude(((Number) row.get("longitude")).doubleValue())
-                .totalRentals(((Number) row.get("total_rentals")).intValue())
-                .totalMinutesUsed(((Number) row.get("total_minutes_used")).intValue())
-                .totalRevenue(new BigDecimal(row.get("total_revenue").toString()))
-                .avgRentalDuration(((Number) row.get("avg_rental_duration")).doubleValue())
-                .lastRentalTime((LocalDateTime) row.get("last_rental_time"))
-                .usageCategory((String) row.get("usage_category"))
-                .build();
-    }
-
-    private ScooterAnalyticsDTO mapToScooterAnalyticsDTO(Map<String, Object> row) {
-        return ScooterAnalyticsDTO.builder()
-                .scooterId(((Number) row.get("id")).longValue())
-                .model((String) row.get("model"))
-                .latitude(((Number) row.get("latitude")).doubleValue())
-                .longitude(((Number) row.get("longitude")).doubleValue())
-                .totalRentals(((Number) row.get("total_rentals")).intValue())
-                .totalMinutesUsed(((Number) row.get("total_minutes_used")).intValue())
-                .totalRevenue(new BigDecimal(row.get("total_revenue").toString()))
-                .avgRentalDuration(((Number) row.get("avg_rental_duration")).doubleValue())
-                .lastRentalTime((LocalDateTime) row.get("last_rental_time"))
-                .usageCategory((String) row.get("usage_category"))
-                .build();
-    }
-
-    private CityRevenueDTO mapToCityRevenueDTO(Map<String, Object> row) {
-        return CityRevenueDTO.builder()
-                .cityName((String) row.get("city_name"))
-                .totalRentals(((Number) row.get("total_rentals")).intValue())
-                .totalRevenue(new BigDecimal(row.get("total_revenue").toString()))
-                .avgDuration(((Number) row.get("avg_duration")).doubleValue())
-                .build();
-    }
-
-    private MaintenanceAlertDTO mapToMaintenanceAlertDTO(Map<String, Object> row) {
-        return MaintenanceAlertDTO.builder()
-                .scooterId(((Number) row.get("id")).longValue())
-                .model((String) row.get("model"))
-                .latitude(((Number) row.get("latitude")).doubleValue())
-                .longitude(((Number) row.get("longitude")).doubleValue())
-                .rentalCount(((Number) row.get("rental_count")).intValue())
-                .totalUsageMinutes(((Number) row.get("total_usage_minutes")).intValue())
-                .build();
+        // Simple Euclidean distance in km (rough approximation)
+        double latDiff = Math.abs(lat1 - lat2) * 111.0; // 1 degree ≈ 111 km
+        double lngDiff = Math.abs(lng1 - lng2) * 111.0 * Math.cos(Math.toRadians(lat1));
+        return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
     }
 }

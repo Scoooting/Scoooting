@@ -4,18 +4,20 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.scoooting.controllers.TransportController;
-import org.scoooting.dto.TransportDTO;
+import org.scoooting.dto.response.TransportResponseDTO;
+import org.scoooting.entities.Transport;
 import org.scoooting.entities.enums.*;
-import org.scoooting.repositories.BikeRepository;
-import org.scoooting.repositories.MotorcycleRepository;
-import org.scoooting.repositories.ScooterRepository;
+import org.scoooting.exceptions.common.DataNotFoundException;
+import org.scoooting.exceptions.transport.TransportNotFoundException;
+import org.scoooting.repositories.TransportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -31,122 +33,104 @@ public class TransportsTests {
     private TransportController transportController;
 
     @Autowired
-    private ScooterRepository scooterRepository;
-    @Autowired
-    private MotorcycleRepository motorcycleRepository;
-    @Autowired
-    private BikeRepository bikeRepository;
+    private TransportRepository transportRepository;
 
-    private final Float lat = 59.95662F;
-    private final Float lon = 30.398804F;
-    private final int radius = 2000;
+    private final Double lat = 59.95662;
+    private final Double lon = 30.398804;
+    private final Double radius = 2.0;
+
+    private List<Long> transportsIds = new ArrayList<>();
 
     @BeforeAll
     void setUp() {
-        var scooter = scooterRepository.findById(1L).orElseThrow();
-        var motorcycle = motorcycleRepository.findById(1L).orElseThrow();
-        var bike = bikeRepository.findById(1L).orElseThrow();
+        for (TransportType type : TransportType.values()) {
+            Transport transport = transportRepository.findAvailableByType(type).get(0);
+            transport.setLatitude(lat);
+            transport.setLongitude(lon);
+            transportRepository.save(transport);
+            transportsIds.add(transport.getId());
+        }
+    }
 
-        scooter.setLatitude(lat);
-        scooter.setLongitude(lon);
-        scooter.setStatus(ScootersStatus.FREE);
-        motorcycle.setLatitude(lat);
-        motorcycle.setLongitude(lon);
-        motorcycle.setStatus(MotorcycleStatus.FREE);
-        bike.setLatitude(lat);
-        bike.setLongitude(lon);
-        bike.setStatus(BikeStatus.NONACTIVE);
-
-        scooterRepository.save(scooter);
-        motorcycleRepository.save(motorcycle);
-        bikeRepository.save(bike);
+    private List<TransportResponseDTO> getTestTransports(List<TransportResponseDTO> transports) {
+        List<TransportResponseDTO> responseDTOS = new ArrayList<>();
+        for (Long id : transportsIds) {
+            transports.stream().filter(e -> e.id().equals(id)).findFirst().ifPresent(responseDTOS::add);
+        }
+        return responseDTOS;
     }
 
     @Test
     void findNearestTransportTest() {
-        List<TransportDTO> transports = (List<TransportDTO>) transportController.findNearestTransports(lat, lon).getBody();
-        List<TransportDTO> assertTransports = transports.stream().filter(e -> e.id() == 1).toList();
+        List<TransportResponseDTO> transports = transportController.findNearestTransports(lat, lon, radius).getBody();
+        List<TransportResponseDTO> assertTransports = getTestTransports(transports);
 
-        assertFalse(assertTransports.stream().anyMatch(e -> e.model().equals("Giant Escape 2") && e.id() == 1));
-        assertTrue(assertTransports.stream().anyMatch(e -> e.model().equals("Yamaha YBR250") && e.id() == 1));
-        assertTrue(assertTransports.stream().anyMatch(e -> e.model().equals("Urent 10A8E") && e.id() == 1));
+        assertEquals(4, assertTransports.size());
     }
 
     @Test
     void findNearestTransportEmptyTest() {
-        List<?> transports = (List<?>) transportController.findNearestTransports(90, 90).getBody();
-        assertEquals(0, transports.size());
+        List<TransportResponseDTO> transports = transportController.findNearestTransports(90.0, 90.0, radius)
+                .getBody();
+        assertEquals(0, getTestTransports(transports).size());
     }
-
+//
     @ParameterizedTest
-    @CsvSource({
-            "BICYCLE, Giant Escape 2, false",
-            "MOTORCYCLE, Yamaha YBR250, true",
-            "SCOOTER, Urent 10A8E, true"
-    })
-    void findNearestTransportByTypeTest(String type, String model, boolean found) {
-        TransportType transportType = TransportType.valueOf(type);
-        List<TransportDTO> transports = (List<TransportDTO>)
-                transportController.findNearestTransportsByType(transportType, lat, lon, radius).getBody();
-
-        assertEquals(found, transports.stream().anyMatch(e -> e.model().equals(model) && e.id() == 1));
+    @EnumSource(TransportType.class)
+    void findNearestTransportByTypeTest(TransportType type) {
+        List<TransportResponseDTO> transports = transportController.findNearestTransportsByType(type, lat, lon, radius)
+                .getBody();
+        List<TransportResponseDTO> assertTransports = getTestTransports(transports);
+        assertEquals(type.toString(), assertTransports.get(0).type());
+        assertEquals(1, assertTransports.size());
     }
 
     @Test
-    void findNearestTransportByTypeNotFoundTest() {
-        Exception exception = assertThrows(IllegalArgumentException.class,
-                () -> transportController.findNearestTransportsByType(TransportType.CAR, lat, lon, radius));
-
-        assertEquals("Transport type not supported: CAR", exception.getMessage());
+    void getTransportByIdTest() {
+        for (Long id : transportsIds) {
+            TransportResponseDTO transport = transportController.getTransport(id).getBody();
+            assertEquals(transport.id(), id);
+        }
     }
 
     @Test
-    void findTransportsInCityTest() {
-        List<TransportDTO> transports = (List<TransportDTO>)
-                transportController.findTransportsInCity("SPB", 0, 50).getBody();
-        assertTrue(transports.stream().anyMatch(e -> e.model().equals("Urent 10A8E") && e.id() == 1));
+    void getTransportByIdNotFoundTest() {
+        Exception exception = assertThrows(TransportNotFoundException.class,
+                () -> transportController.getTransport(-1L));
+        assertEquals("Transport not found", exception.getMessage());
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "BICYCLE, Giant Escape 2, false",
-            "MOTORCYCLE, Yamaha YBR250, true",
-            "SCOOTER, Urent 10A8E, true"
-    })
-    void findAvailableTransportsByTypeTest(String type, String model, boolean found) {
-        TransportType transportType = TransportType.valueOf(type);
-        List<TransportDTO> transports = (List<TransportDTO>)
-                transportController.findAvailableTransportsByType(transportType).getBody();
-        assertEquals(found, transports.stream().anyMatch(e -> e.model().equals(model) && e.id() == 1));
+    @EnumSource(TransportType.class)
+    void findAvailableTransportsByTypeTest(TransportType type) {
+        List<TransportResponseDTO> transports = transportController.findAvailableTransportsByType(type).getBody();
+        assertEquals(1, getTestTransports(transports).size());
     }
 
     @Test
     void getAvailabilityStatsTest() {
-        Map<TransportType, Long> stats = (Map<TransportType, Long>) transportController.getAvailabilityStats().getBody();
-        assertAll(
-                () -> assertEquals(25, stats.get(TransportType.ELECTRIC_BICYCLE)),
-                () -> assertEquals(50, stats.get(TransportType.ELECTRIC_KICK_SCOOTER)),
-                () -> assertEquals(14, stats.get(TransportType.GAS_MOTORCYCLE))
-        );
+        Map<String, Long> stats = transportController.getAvailabilityStats().getBody();
+        for (TransportType type : TransportType.values())
+            assertEquals(30, stats.get(type.toString()));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "BICYCLE, Giant Escape 2, UNAVAILABLE",
-            "MOTORCYCLE, Yamaha YBR250, AVAILABLE",
-            "SCOOTER, Urent 10A8E, AVAILABLE"
-    })
-    void getTransportTest(String type, String model, String status) {
-        TransportType transportType = TransportType.valueOf(type);
-        TransportStatus transportStatus = TransportStatus.valueOf(status);
-        TransportDTO transport = (TransportDTO) transportController.getTransport(1L, transportType).getBody();
+    @Test
+    void updateTransportStatusTest() {
+        Long id = transportsIds.get(0);
+        TransportResponseDTO transport = transportController.updateTransportStatus(id, "IN_USE").getBody();
+        assertEquals(transport.status(), "IN_USE");
+        transportController.updateTransportStatus(id, "AVAILABLE").getBody();
+    }
 
-        assertAll(
-                () -> assertEquals(1, transport.id()),
-                () -> assertEquals(model, transport.model()),
-                () -> assertEquals(transportStatus, transport.status()),
-                () -> assertEquals(lat, transport.latitude()),
-                () -> assertEquals(lon, transport.longitude())
-        );
+    @Test
+    void updateTransportStatusExceptionsTest() {
+        Long id = transportsIds.get(0);
+        Exception exception = assertThrows(TransportNotFoundException.class,
+                () -> transportController.updateTransportStatus(-1L, "IN_USE"));
+        assertEquals("Transport not found", exception.getMessage());
+
+        exception = assertThrows(DataNotFoundException.class,
+                () -> transportController.updateTransportStatus(id, "HAHA"));
+        assertEquals("Status not found", exception.getMessage());
     }
 }

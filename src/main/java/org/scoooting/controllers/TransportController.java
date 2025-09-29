@@ -1,10 +1,14 @@
 package org.scoooting.controllers;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.RequiredArgsConstructor;
-import org.scoooting.dto.TransportDTO;
+import org.scoooting.dto.response.TransportResponseDTO;
 import org.scoooting.entities.enums.TransportType;
 import org.scoooting.services.TransportService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,65 +17,76 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/transports")
+@Validated
 public class TransportController {
 
     private final TransportService transportService;
 
     /**
-     * Get all available transports within 2km radius
+     * Get all available transports within specified radius
      */
     @GetMapping("/nearest")
-    public ResponseEntity<?> findNearestTransports(
-            @RequestParam float lat,
-            @RequestParam float lon) {
-        return ResponseEntity.ok(transportService.findNearestTransports(lat, lon));
+    public ResponseEntity<List<TransportResponseDTO>> findNearestTransports(
+            @RequestParam @DecimalMin("-90") @DecimalMax("90") Double lat,
+            @RequestParam @DecimalMin("-180") @DecimalMax("180") Double lng,
+            @RequestParam(defaultValue = "2.0") @DecimalMin("0.1") @DecimalMax("50") Double radiusKm
+    ) {
+        List<TransportResponseDTO> transports = transportService.findNearestTransports(lat, lng, radiusKm);
+        return ResponseEntity.ok(transports);
     }
 
     /**
-     * Get the nearest transports by specific type
+     * Get nearest transports by specific type
      */
     @GetMapping("/nearest/{type}")
-    public ResponseEntity<?> findNearestTransportsByType(
+    public ResponseEntity<List<TransportResponseDTO>> findNearestTransportsByType(
             @PathVariable TransportType type,
-            @RequestParam float lat,
-            @RequestParam float lon,
-            @RequestParam(defaultValue = "2000") int radius) {
-        return ResponseEntity.ok(transportService.findNearestTransportsByType(lat, lon, radius, type));
-    }
-
-    /**
-     * Get transports in specific city with pagination
-     */
-    @GetMapping("/city")
-    public ResponseEntity<?> findTransportsInCity(
-            @RequestParam String city,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "50") int limit) {
-        return ResponseEntity.ok(transportService.findTransportsInCity(city, offset, limit));
-    }
-
-    /**
-     * Get all available transports by type
-     */
-    @GetMapping("/available/{type}")
-    public ResponseEntity<?> findAvailableTransportsByType(@PathVariable TransportType type) {
-        return ResponseEntity.ok(transportService.findAvailableTransportsByType(type));
-    }
-
-    /**
-     * Get availability statistics for all transport types
-     */
-    @GetMapping("/stats/availability")
-    public ResponseEntity<?> getAvailabilityStats() {
-        return ResponseEntity.ok(transportService.getAvailabilityStats());
+            @RequestParam @DecimalMin("-90") @DecimalMax("90") Double lat,
+            @RequestParam @DecimalMin("-180") @DecimalMax("180") Double lng,
+            @RequestParam(defaultValue = "2.0") @DecimalMin("0.1") @DecimalMax("50") Double radiusKm
+    ) {
+        List<TransportResponseDTO> transports = transportService.findTransportsByType(type, lat, lng, radiusKm);
+        return ResponseEntity.ok(transports);
     }
 
     /**
      * Get specific transport details
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getTransport(@PathVariable Long id, @RequestParam TransportType type) {
-        return ResponseEntity.ok(transportService.getTransportById(id, type));
+    public ResponseEntity<TransportResponseDTO> getTransport(@PathVariable Long id) {
+        TransportResponseDTO transport = transportService.getTransportById(id);
+        return ResponseEntity.ok(transport);
     }
 
+    /**
+     * Get all available transports by type
+     */
+    @GetMapping("/available/{type}")
+    public ResponseEntity<List<TransportResponseDTO>> findAvailableTransportsByType(
+            @PathVariable TransportType type
+    ) {
+        List<TransportResponseDTO> transports = transportService.findAvailableTransportsByType(type);
+        return ResponseEntity.ok(transports);
+    }
+
+    /**
+     * Get availability statistics for all transport types
+     */
+    @GetMapping("/stats/availability")
+    public ResponseEntity<Map<String, Long>> getAvailabilityStats() {
+        Map<String, Long> stats = transportService.getAvailabilityStats();
+        return ResponseEntity.ok(stats);
+    }
+
+    /**
+     * Update transport status (ADMIN only)
+     */
+    @PutMapping("/{id}/status")
+    public ResponseEntity<TransportResponseDTO> updateTransportStatus(
+            @PathVariable Long id,
+            @RequestParam String status
+    ) {
+        TransportResponseDTO transport = transportService.updateTransportStatus(id, status);
+        return ResponseEntity.ok(transport);
+    }
 }

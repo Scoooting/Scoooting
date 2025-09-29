@@ -1,47 +1,43 @@
 package org.scoooting.entities;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.scoooting.entities.enums.TransportStatus;
 import org.scoooting.entities.enums.TransportType;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Table("transports")
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Transport {
 
     @Id
     private Long id;
 
-    @NotBlank
-    @Size(max = 64)
-    private String model;
+    // ENUM stored as VARCHAR
+    @NotNull
+    private TransportType transportType;
 
-    @NotBlank
-    @Size(max = 32)
-    private TransportType type;
+    // FK to transport_statuses table
+    @NotNull
+    private Long statusId;
 
-    @NotBlank
-    @Size(max = 32)
-    private TransportStatus status;
+    // FK to cities table (nullable - transport can be outside cities)
+    private Long cityId;
 
     @NotNull
-    private Float latitude;
+    @DecimalMin(value = "-90.0", message = "Latitude must be between -90 and 90")
+    @DecimalMax(value = "90.0", message = "Latitude must be between -90 and 90")
+    private Double latitude;
 
     @NotNull
-    private Float longitude;
-
-    private BigDecimal batteryLevel; // For electric vehicles
-    private String serialNumber;
-    private LocalDateTime lastMaintenanceDate;
+    @DecimalMin(value = "-180.0", message = "Longitude must be between -180 and 180")
+    @DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
+    private Double longitude;
 }
