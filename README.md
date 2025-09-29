@@ -159,3 +159,50 @@ erDiagram
 |<img width="3840" height="1499" alt="Untitled diagram _ Mermaid Chart-2025-09-28-225001" src="https://github.com/user-attachments/assets/370db482-e16c-4b9f-b7c7-63006dee0f8f" />|
 |-|
 
+## Microservices MVP architectural diagram
+
+```mermaid
+---
+config:
+  layout: elk
+title: Scoooting
+---
+flowchart LR
+ subgraph Infrastructure["Infrastructure"]
+        Eureka["Eureka Server<br>Service Registry<br>:8761"]
+        Config["Config Server<br>Configuration<br>:8888"]
+        Gateway["API Gateway<br>Entry Point<br>:8080"]
+  end
+ subgraph Microservices["Microservices"]
+        UserSvc["User Service<br>WebFlux +R2DBC<br>:8081"]
+        RentalSvc["Rental Service<br>WebFlux + JDBC<br>:8082"]
+        TransportSvc["Transport Service<br>MVC + JDBC<br>:8083"]
+  end
+    Client["Client/Frontend"] -- HTTP --> Gateway
+    Gateway -- Route /api/users/** --> UserSvc
+    Gateway -- Route /api/rentals/** --> RentalSvc
+    Gateway -- Route /api/transports/** --> TransportSvc
+    UserSvc -. "> 1. Register at startup<br>> 2. Heartbeat every 30s" .-> Eureka
+    RentalSvc -. "> 1. Register at startup<br>> 2. Heartbeat every 30s" .-> Eureka
+    TransportSvc -. "> 1. Register at startup<br>> 2. Heartbeat every 30s" .-> Eureka
+    Gateway -. Discover services<br>Load balance .-> Eureka
+    UserSvc -. "Fetch config at startup<br>GET /user-service/default" .-> Config
+    RentalSvc -. "Fetch config at startup<br>GET /rental-service/default" .-> Config
+    TransportSvc -. "Fetch config at startup<br>GET /transport-service/default" .-> Config
+    RentalSvc -- Feign: GET /transports/id<br>Circuit Breaker --> TransportSvc
+    RentalSvc -- Feign: GET /users/id --> UserSvc
+    UserSvc -- Spring JDBC<br>Blocking --> UserDB["User DB<br>PostgreSQL<br>users_db"]
+    RentalSvc -- "Spring JDBC<br>Blocking" --> RentalDB["Rental DB<br>PostgreSQL<br>rentals_db"]
+    TransportSvc -- R2DBC<br>Reactive --> TransportDB["Transport DB<br>PostgreSQL<br>transports_db"]
+    style Eureka fill:#e1f5ff
+    style Config fill:#e1f5ff
+    style Gateway fill:#ffe1e1
+    style UserSvc fill:#fff4e1
+    style RentalSvc fill:#e1ffe1
+    style TransportSvc fill:#f0e1ff
+```
+
+#### or a pic if mermaid doesn't work:
+
+|<img width="3840" height="2222" alt="Mermaid Chart - Create complex, visual diagrams with text  A smarter way of creating diagrams -2025-09-29-130110" src="https://github.com/user-attachments/assets/aaa9b082-6d34-4661-acbd-4691dfbc71d0" />|
+|-|
