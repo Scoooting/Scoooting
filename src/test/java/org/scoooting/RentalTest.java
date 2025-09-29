@@ -4,8 +4,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.scoooting.controllers.RentalController;
+import org.scoooting.dto.request.EndRentalRequestDTO;
 import org.scoooting.dto.request.StartRentalRequestDTO;
 import org.scoooting.dto.response.RentalResponseDTO;
+import org.scoooting.entities.Rental;
 import org.scoooting.entities.Transport;
 import org.scoooting.entities.User;
 import org.scoooting.entities.enums.*;
@@ -33,6 +35,8 @@ public class RentalTest {
     private UserRepository userRepository;
     @Autowired
     private TransportRepository transportRepository;
+    @Autowired
+    private RentalRepository rentalRepository;
 
     private final Double lat = 59.95662;
     private final Double lon = 30.398804;
@@ -67,14 +71,17 @@ public class RentalTest {
     @Test
     void startRentalTest() {
         for (Long id : transportsIds) {
-            RentalResponseDTO rentalResponseDTO = rentalController.startRental(new StartRentalRequestDTO(1, id, lat, lon));
+            RentalResponseDTO rentalResponseDTO = rentalController.startRental(
+                    new StartRentalRequestDTO(1L, id, lat, lon)).getBody();
+
             assertAll(
                     () -> assertEquals(1, rentalResponseDTO.userId()),
                     () -> assertEquals(testName, rentalResponseDTO.userName()),
                     () -> assertEquals(id, rentalResponseDTO.transportId()),
-                    () -> assertEquals('ACTIVE', rentalResponseDTO.st)
+                    () -> assertEquals("ACTIVE", rentalResponseDTO.status())
             );
-        }
 
+            rentalRepository.deleteAll();
+        }
     }
 }

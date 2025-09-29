@@ -119,7 +119,7 @@ public class TransportsTests {
         Long id = transportsIds.get(0);
         TransportResponseDTO transport = transportController.updateTransportStatus(id, "IN_USE").getBody();
         assertEquals(transport.status(), "IN_USE");
-        transportController.updateTransportStatus(id, "AVAILABLE").getBody();
+        transportController.updateTransportStatus(id, "AVAILABLE");
     }
 
     @Test
