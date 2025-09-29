@@ -1,5 +1,8 @@
 package org.scoooting.entities.enums;
 
 public enum TransportType {
-    SCOOTER, MOTORCYCLE, BICYCLE, E_BIKE, E_SCOOTER
+    ELECTRIC_KICK_SCOOTER, // "🛴"
+    ELECTRIC_SCOOTER, // "🛵"
+    ELECTRIC_BICYCLE, // "🚲"
+    GAS_MOTORCYCLE // "🏍️"
 }

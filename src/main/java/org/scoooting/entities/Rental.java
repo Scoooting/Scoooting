@@ -1,16 +1,10 @@
 package org.scoooting.entities;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.scoooting.entities.enums.RentalStatus;
-import org.scoooting.entities.enums.TransportType;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
@@ -18,51 +12,55 @@ import java.time.LocalDateTime;
 
 @Table("rentals")
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-@Getter
+@AllArgsConstructor
 public class Rental {
 
     @Id
     private Long id;
 
     @NotNull
-    private Long userId;
+    private Long userId; // FK to users
 
     @NotNull
-    private Long transportId; // Changed from scooterId
-
-    @NotBlank
-    @Size(max = 32)
-    private TransportType transportType; // Track what type was rented
+    private Long transportId; // FK to transports
 
     @NotNull
+    private Long statusId; // FK to rental_statuses
+
+    @NotNull
+    @PastOrPresent(message = "Start time cannot be in the future")
     private LocalDateTime startTime;
+
+    @Future(message = "End time must be in the future if set")
     private LocalDateTime endTime;
 
     @NotNull
-    private Float startLatitude;
+    @DecimalMin(value = "-90.0")
+    @DecimalMax(value = "90.0")
+    private Double startLatitude;
 
     @NotNull
-    private Float startLongitude;
+    @DecimalMin(value = "-180.0")
+    @DecimalMax(value = "180.0")
+    private Double startLongitude;
 
-    private Float endLatitude;
-    private Float endLongitude;
+    @DecimalMin(value = "-90.0")
+    @DecimalMax(value = "90.0")
+    private Double endLatitude;
+
+    @DecimalMin(value = "-180.0")
+    @DecimalMax(value = "180.0")
+    private Double endLongitude;
+
+    @DecimalMin(value = "0.0", message = "Cost cannot be negative")
+    @Digits(integer = 8, fraction = 2, message = "Cost format: XXXXXXXX.XX")
     private BigDecimal totalCost;
+
+    @Min(value = 0, message = "Duration cannot be negative")
     private Integer durationMinutes;
 
-    @NotBlank
-    @Size(max = 32)
-    private RentalStatus status;
-
-    public Rental(Long userId, Long transportId, TransportType transportType,
-                  Float startLatitude, Float startLongitude) {
-        this.userId = userId;
-        this.transportId = transportId;
-        this.transportType = transportType;
-        this.startLatitude = startLatitude;
-        this.startLongitude = startLongitude;
-        this.startTime = LocalDateTime.now();
-        this.status = RentalStatus.ACTIVE;
-    }
+    @DecimalMin(value = "0.0", message = "Distance cannot be negative")
+    @Digits(integer = 6, fraction = 2, message = "Distance format: XXXX.XX")
+    private BigDecimal distanceKm;
 }

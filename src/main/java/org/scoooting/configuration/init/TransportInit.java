@@ -12,14 +12,23 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Deprecated
 public class TransportInit implements ApplicationRunner {
 
     private final TransportRepository transportRepository;
 
     @Override
     public void run(ApplicationArguments args) {
-        List<Transport> transports = new TransportAPI().generateInitialTransports();
-        transportRepository.saveAll(transports);
+        /*
+        * Note to myself:
+        * This place is very handy for adding big chunks of data,
+        * which would be helpful to showcase a system properly.
+        * However, we don't use it currently to simplify our system.
+        * TODO: can be used later
+        *
+        * */
+        // List<Transport> transports = new TransportAPI().generateInitialTransports();
+        // transportRepository.saveAll(transports);
     }
 }
 

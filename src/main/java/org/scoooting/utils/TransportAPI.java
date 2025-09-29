@@ -1,7 +1,6 @@
 package org.scoooting.utils;
 
 import org.scoooting.entities.Transport;
-import org.scoooting.entities.enums.TransportStatus;
 import org.scoooting.entities.enums.TransportType;
 
 import java.math.BigDecimal;
@@ -12,6 +11,7 @@ import java.util.List;
 /**
  * Mock API for generating initial transport data (replaces ScooterAPI)
  */
+@Deprecated
 public class TransportAPI {
 
     protected static final double SPB_LATITUDE_MIN = 59.823535;

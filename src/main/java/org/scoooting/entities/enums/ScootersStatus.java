@@ -1,5 +1,6 @@
 package org.scoooting.entities.enums;
 
+@Deprecated
 public enum ScootersStatus {
     FREE,         // Available for rental
     BUSY,         // Currently rented

@@ -1,7 +1,6 @@
 package org.scoooting.dto;
 
 import lombok.Builder;
-import org.scoooting.entities.enums.TransportStatus;
 import org.scoooting.entities.enums.TransportType;
 
 import java.math.BigDecimal;

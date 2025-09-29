@@ -1,0 +1,55 @@
+-- Sample users
+insert into users (email, name, password_hash, role_id, city_id, bonuses)
+select
+    'user' || gs || '@example.com',
+    'User_' || gs,
+    'password' || gs,
+    r.id,
+    c.id,
+    (random() * 100)::integer
+from generate_series(1, 10) gs,
+     user_roles r,
+     cities c
+where r.name = 'USER'
+and c.name = 'SPB';
+
+-- Sample transports with details
+with transport_data as (
+    insert into transports (transport_type, status_id, city_id, latitude, longitude)
+    select
+        case
+            when gs % 4 = 1 then 'ELECTRIC_KICK_SCOOTER'
+            when gs % 4 = 2 then 'ELECTRIC_SCOOTER'
+            when gs % 4 = 3 then 'ELECTRIC_BICYCLE'
+            else 'GAS_MOTORCYCLE'
+        end as transport_type,
+        ts.id,
+        c.id,
+        59.9311 + (random() - 0.5) * 0.1, -- random around SPB center
+        30.3609 + (random() - 0.5) * 0.1,
+    from generate_series(1, 40) gs,
+         transport_statuses ts,
+         cities c
+    where ts.name = 'AVAILABLE'
+    and c.name = 'SPB'
+    returning id, transport_type
+)
+-- Insert kick scooter details
+insert into electric_kick_scooters (transport_id, model, battery_level, max_speed)
+select td.id, 'Xiaomi Mi ' || (td.id % 5 + 1), 80 + random() * 20, 25
+from transport_data td where td.transport_type = 'ELECTRIC_KICK_SCOOTER';
+
+-- Insert scooter details
+insert into electric_scooters (transport_id, model, battery_level, max_speed, has_storage_box)
+select td.id, 'Delivery Pro ' || (td.id % 3 + 1), 70 + random() * 30, 45, true
+from transport_data td where td.transport_type = 'ELECTRIC_SCOOTER';
+
+-- Insert bicycle details
+insert into electric_bicycles (transport_id, model, battery_level, gear_count)
+select td.id, 'E-Bike ' || (td.id % 4 + 1), 60 + random() * 40, 7
+from transport_data td where td.transport_type = 'ELECTRIC_BICYCLE';
+
+-- Insert motorcycle details
+insert into gas_motorcycles (transport_id, model, fuel_level, engine_size)
+select td.id, 'Honda CB' || (125 + (td.id % 4) * 125), 50 + random() * 50, 125 + (td.id % 4) * 125
+from transport_data td where td.transport_type = 'GAS_MOTORCYCLE';
