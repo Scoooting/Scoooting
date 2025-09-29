@@ -5,7 +5,6 @@ import org.scoooting.dto.BikeDTO;
 import org.scoooting.dto.MotorcycleDTO;
 import org.scoooting.dto.ScootersDTO;
 import org.scoooting.dto.TransportDTO;
-import org.scoooting.entities.Transport;
 import org.scoooting.entities.enums.*;
 import org.scoooting.mappers.TransportMapper;
 import org.scoooting.repositories.TransportRepository;
@@ -52,13 +51,13 @@ public class TransportService {
      */
     public List<TransportDTO> findNearestTransportsByType(float lat, float lon, int radius, TransportType type) {
         return switch (type) {
-            case SCOOTER -> scooterService.findNearestScooters(lat, lon).stream()
+            case ELECTRIC_KICK_SCOOTER -> scooterService.findNearestScooters(lat, lon).stream()
                     .map(this::scooterToTransport)
                     .collect(Collectors.toList());
-            case BICYCLE -> bikeService.findNearestBikes(lat, lon, radius).stream()
+            case ELECTRIC_BICYCLE -> bikeService.findNearestBikes(lat, lon, radius).stream()
                     .map(this::bikeToTransport)
                     .collect(Collectors.toList());
-            case MOTORCYCLE -> motorcycleService.findNearestMotorcycles(lat, lon, radius).stream()
+            case GAS_MOTORCYCLE -> motorcycleService.findNearestMotorcycles(lat, lon, radius).stream()
                     .map(this::motorcycleToTransport)
                     .collect(Collectors.toList());
             default -> throw new IllegalArgumentException("Transport type not supported: " + type);
@@ -70,15 +69,15 @@ public class TransportService {
      */
     public TransportDTO getTransportById(Long id, TransportType type) {
         return switch (type) {
-            case SCOOTER -> {
+            case ELECTRIC_KICK_SCOOTER -> {
                 ScootersDTO scooter = scooterService.findScooterById(id);
                 yield scooterToTransport(scooter);
             }
-            case BICYCLE -> {
+            case ELECTRIC_BICYCLE -> {
                 BikeDTO bike = bikeService.findBikeById(id);
                 yield bikeToTransport(bike);
             }
-            case MOTORCYCLE -> {
+            case GAS_MOTORCYCLE -> {
                 MotorcycleDTO motorcycle = motorcycleService.findMotorcycleById(id);
                 yield motorcycleToTransport(motorcycle);
             }
@@ -91,10 +90,14 @@ public class TransportService {
      */
     public List<TransportDTO> findTransportsInCity(String city, int offset, int limit) {
         // For simplicity, get scooters from city (bikes/motorcycles would need similar methods)
+        List<TransportDTO> cityTransports = new ArrayList<>();
 
         List<ScootersDTO> scooters = scooterService.findScootersInCity(city, offset, limit);
+        cityTransports.addAll(scooters.stream()
+                .map(this::scooterToTransport)
+                .collect(Collectors.toList()));
 
-        return new ArrayList<>(scooters.stream().map(this::scooterToTransport).toList());
+        return cityTransports;
     }
 
     /**
@@ -102,13 +105,13 @@ public class TransportService {
      */
     public List<TransportDTO> findAvailableTransportsByType(TransportType type) {
         return switch (type) {
-            case SCOOTER -> scooterService.findAvailableScooters().stream()
+            case ELECTRIC_KICK_SCOOTER -> scooterService.findAvailableScooters().stream()
                     .map(this::scooterToTransport)
                     .collect(Collectors.toList());
-            case BICYCLE -> bikeService.findAvailableBikes().stream()
+            case ELECTRIC_BICYCLE -> bikeService.findAvailableBikes().stream()
                     .map(this::bikeToTransport)
                     .collect(Collectors.toList());
-            case MOTORCYCLE -> motorcycleService.findAvailableMotorcycles().stream()
+            case GAS_MOTORCYCLE -> motorcycleService.findAvailableMotorcycles().stream()
                     .map(this::motorcycleToTransport)
                     .collect(Collectors.toList());
             default -> throw new IllegalArgumentException("Transport type not supported: " + type);
@@ -121,9 +124,9 @@ public class TransportService {
     public Map<TransportType, Long> getAvailabilityStats() {
         Map<TransportType, Long> stats = new HashMap<>();
 
-        stats.put(TransportType.SCOOTER, scooterService.getAvailableCount());
-        stats.put(TransportType.BICYCLE, bikeService.getAvailableCount());
-        stats.put(TransportType.MOTORCYCLE, motorcycleService.getAvailableCount());
+        stats.put(TransportType.ELECTRIC_KICK_SCOOTER, scooterService.getAvailableCount());
+        stats.put(TransportType.ELECTRIC_BICYCLE, bikeService.getAvailableCount());
+        stats.put(TransportType.GAS_MOTORCYCLE, motorcycleService.getAvailableCount());
 
         return stats;
     }
@@ -133,7 +136,7 @@ public class TransportService {
         return TransportDTO.builder()
                 .id(scooter.id())
                 .model(scooter.model())
-                .type(TransportType.SCOOTER)
+                .type(TransportType.ELECTRIC_KICK_SCOOTER)
                 .status(mapScooterStatus(scooter.status()))
                 .latitude(scooter.latitude())
                 .longitude(scooter.longitude())
@@ -144,7 +147,7 @@ public class TransportService {
         return TransportDTO.builder()
                 .id(bike.id())
                 .model(bike.model())
-                .type(bike.isElectric() ? TransportType.E_BIKE : TransportType.BICYCLE)
+                .type(bike.isElectric() ? TransportType.ELECTRIC_SCOOTER : TransportType.ELECTRIC_BICYCLE)
                 .status(mapBikeStatus(bike.status()))
                 .latitude(bike.latitude())
                 .longitude(bike.longitude())
@@ -155,7 +158,7 @@ public class TransportService {
         return TransportDTO.builder()
                 .id(motorcycle.id())
                 .model(motorcycle.model())
-                .type(TransportType.MOTORCYCLE)
+                .type(TransportType.GAS_MOTORCYCLE)
                 .status(mapMotorcycleStatus(motorcycle.status()))
                 .latitude(motorcycle.latitude())
                 .longitude(motorcycle.longitude())

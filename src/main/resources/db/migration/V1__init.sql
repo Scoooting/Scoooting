@@ -1,12 +1,8 @@
 create extension if not exists postgis;
 
-create table if not exists users (
+create table user_roles (
     id bigserial primary key,
-    email character varying(64) NOT NULL,
-    name character varying(32) NOT NULL,
-    password character varying(128) NOT NULL,
-    bonuses integer NOT NULL DEFAULT 0,
-    role character varying(16) NOT NULL
+    name varchar(32) not null
 );
 
 create table if not exists cities (
@@ -18,12 +14,14 @@ create table if not exists cities (
     longitude_max real not null
 );
 
-create table if not exists scooters (
+create table if not exists users (
     id bigserial primary key,
-    model varchar(64) NOT NULL,
-    status varchar(32) NOT NULL,
-    latitude real,
-    longitude real
+    email character varying(64) NOT NULL,
+    name character varying(32) NOT NULL,
+    password character varying(128) NOT NULL,
+    role_id bigint references user_roles(id),
+    city_id bigint references cities(id),
+    bonuses integer NOT NULL DEFAULT 0
 );
 
 create function earth_distance(lat1 real, lon1 real, lat2 real, lon2 real)

@@ -11,7 +11,6 @@ import org.scoooting.entities.enums.*;
 import org.scoooting.repositories.BikeRepository;
 import org.scoooting.repositories.MotorcycleRepository;
 import org.scoooting.repositories.ScooterRepository;
-import org.scoooting.repositories.TransportRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -19,7 +18,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -126,9 +124,9 @@ public class TransportsTests {
     void getAvailabilityStatsTest() {
         Map<TransportType, Long> stats = (Map<TransportType, Long>) transportController.getAvailabilityStats().getBody();
         assertAll(
-                () -> assertEquals(25, stats.get(TransportType.BICYCLE)),
-                () -> assertEquals(50, stats.get(TransportType.SCOOTER)),
-                () -> assertEquals(14, stats.get(TransportType.MOTORCYCLE))
+                () -> assertEquals(25, stats.get(TransportType.ELECTRIC_BICYCLE)),
+                () -> assertEquals(50, stats.get(TransportType.ELECTRIC_KICK_SCOOTER)),
+                () -> assertEquals(14, stats.get(TransportType.GAS_MOTORCYCLE))
         );
     }
 
