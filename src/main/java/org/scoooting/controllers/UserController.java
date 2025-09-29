@@ -8,14 +8,14 @@ import org.scoooting.dto.response.UserResponseDTO;
 import org.scoooting.services.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.scoooting.dto.common.PageResponseDTO;
 import org.scoooting.dto.request.UpdateUserRequestDTO;
 import org.scoooting.dto.request.UserRegistrationRequestDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,33 +32,32 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserResponseDTO> getCurrentUser(Authentication auth) {
         UserResponseDTO user = userService.findUserByEmail(auth.getName());
         return ResponseEntity.ok(user);
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PageResponseDTO<UserResponseDTO>> getUsers(
+    public ResponseEntity<List<UserResponseDTO>> getUsers(
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     ) {
-        PageResponseDTO<UserResponseDTO> users = userService.getUsers(email, name, page, size);
-        return ResponseEntity.ok(users);
-    }
+        List<UserResponseDTO> users = userService.findUsersWithFilters(email, name, page, size);
+        long totalCount = userService.countUsersWithFilters(email, name);
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(totalCount))
+                .body(users);    }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
         UserResponseDTO user = userService.findUserById(id);
         return ResponseEntity.ok(user);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponseDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequestDTO request
@@ -68,7 +67,6 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();

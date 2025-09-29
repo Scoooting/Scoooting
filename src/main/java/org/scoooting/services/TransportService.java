@@ -100,6 +100,14 @@ public class TransportService {
         return toResponseDTO(transport);
     }
 
+    public List<TransportResponseDTO> findAllTransports(Integer page, Integer size) {
+        int offset = page * size;
+        List<Transport> transports = transportRepository.findAllWithPagination(offset, size);
+        return transports.stream()
+                .map(this::toResponseDTO)
+                .toList();
+    }
+
     private TransportResponseDTO toResponseDTO(Transport transport) {
         String statusName = statusRepository.findById(transport.getStatusId())
                 .map(TransportStatus::getName).orElse("UNKNOWN");

@@ -4,11 +4,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.scoooting.dto.common.PageResponseDTO;
 import org.scoooting.dto.request.EndRentalRequestDTO;
 import org.scoooting.dto.request.StartRentalRequestDTO;
 import org.scoooting.dto.response.RentalResponseDTO;
+import org.scoooting.dto.response.UserResponseDTO;
 import org.scoooting.services.RentalService;
+import org.scoooting.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,26 +25,29 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @RequestMapping("/api/rentals")
 @Validated
+@Slf4j
 public class RentalController {
 
     private final RentalService rentalService;
+    private final UserService userService;
 
     /**
      * Start a new rental
      */
     @PostMapping("/start")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<RentalResponseDTO> startRental(
             @Valid @RequestBody StartRentalRequestDTO request,
             Authentication auth
     ) {
+        log.info("Received request: {}", request);
+        log.info("Auth: {}", auth.getName());
+
         // Get current user by email
         String email = auth.getName();
-        // You'll need to get userId from UserService
-        // For now, assuming userId is passed in request
+        UserResponseDTO user = userService.findUserByEmail(email);
 
         RentalResponseDTO rental = rentalService.startRental(
-                request.userId(), // This should come from auth context
+                user.id(),
                 request.transportId(),
                 request.startLatitude(),
                 request.startLongitude()
@@ -54,14 +60,14 @@ public class RentalController {
      * End current active rental
      */
     @PostMapping("/end")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<RentalResponseDTO> endRental(
             @Valid @RequestBody EndRentalRequestDTO request,
             Authentication auth
     ) {
-        // Get userId from auth context
+        String email = auth.getName();
+        UserResponseDTO user = userService.findUserByEmail(email);
         RentalResponseDTO rental = rentalService.endRental(
-                request.userId(), // This should come from auth context
+                user.id(),
                 request.endLatitude(),
                 request.endLongitude()
         );
@@ -73,11 +79,12 @@ public class RentalController {
      * Cancel current active rental
      */
     @PostMapping("/cancel")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Void> cancelRental(
-            @RequestParam Long userId // Should come from auth context
+            Authentication auth
     ) {
-        rentalService.cancelRental(userId);
+        String email = auth.getName();
+        UserResponseDTO user = userService.findUserByEmail(email);
+        rentalService.cancelRental(user.id());
         return ResponseEntity.noContent().build();
     }
 
@@ -85,11 +92,12 @@ public class RentalController {
      * Get user's current active rental
      */
     @GetMapping("/active")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<RentalResponseDTO> getActiveRental(
-            @RequestParam Long userId // Should come from auth context
+            Authentication auth
     ) {
-        Optional<RentalResponseDTO> activeRental = rentalService.getActiveRental(userId);
+        String email = auth.getName();
+        UserResponseDTO user = userService.findUserByEmail(email);
+        Optional<RentalResponseDTO> activeRental = rentalService.getActiveRental(user.id());
         return ResponseEntity.ok(activeRental.orElse(null));
     }
 
@@ -97,13 +105,14 @@ public class RentalController {
      * Get user's rental history with pagination
      */
     @GetMapping("/history")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<PageResponseDTO<RentalResponseDTO>> getRentalHistory(
-            @RequestParam Long userId, // Should come from auth context
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size,
+            Authentication auth
     ) {
-        PageResponseDTO<RentalResponseDTO> result = rentalService.getUserRentalHistory(userId, page, size);
+        String email = auth.getName();
+        UserResponseDTO user = userService.findUserByEmail(email);
+        PageResponseDTO<RentalResponseDTO> result = rentalService.getUserRentalHistory(user.id(), page, size);
         return ResponseEntity.ok(result);
     }
 }

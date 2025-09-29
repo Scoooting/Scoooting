@@ -35,13 +35,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        // User endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/transports/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/scooters/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/rentals/**").hasAnyRole("USER", "ADMIN")
+                        // Transport endpoints - доступны всем аутентифицированным
+                        .requestMatchers(HttpMethod.GET, "/api/transports/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/transports/**").hasRole("ADMIN")
 
-                        // Admin endpoints
+                        // Rental endpoints - доступны всем аутентифицированным
+                        .requestMatchers("/api/rentals/**").authenticated()
+
+                        // Scooter endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/scooters/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/scooters/**").hasRole("ADMIN")
+
+                        // User management - только админы
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
 

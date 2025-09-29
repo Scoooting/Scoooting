@@ -17,5 +17,5 @@ spring:
       adminPassword: 1234
 
 jwt:
-  secret: "your-super-secret-key-at-least-256-bits-long-for-production-change-this"
+  secret: "QdLHnMB3yMJFIdVHvLQ3wh4oW1BY79wb16eR4kzaRQeLghZnQNYcWKrwlmfL3Y89lEAByEnGKnUS0FzK38rbAH95njczJXR9VyLzM1coi66WEVX2XyqtBnvvtB96mkRSJrDtSWFWxLJ6PSlSG9qkOBhS5Bt8nZ8YEYIjNrn6DS8iWye2o1Wx8oDVN0bwUnAn3A6xON3sqEI0YL2NEZdA65ImCveXaYBBHy0p4VrHBBbqhlUAiMBT5oJg55r84o35"
   expiration: 86400000
