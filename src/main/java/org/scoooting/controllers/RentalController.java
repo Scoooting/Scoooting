@@ -4,14 +4,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.scoooting.dto.common.PageResponseDTO;
 import org.scoooting.dto.request.EndRentalRequestDTO;
 import org.scoooting.dto.request.StartRentalRequestDTO;
 import org.scoooting.dto.response.RentalResponseDTO;
-import org.scoooting.dto.response.UserResponseDTO;
 import org.scoooting.services.RentalService;
-import org.scoooting.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,29 +22,23 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @RequestMapping("/api/rentals")
 @Validated
-@Slf4j
 public class RentalController {
 
     private final RentalService rentalService;
-    private final UserService userService;
 
     /**
      * Start a new rental
      */
     @PostMapping("/start")
     public ResponseEntity<RentalResponseDTO> startRental(
-            @Valid @RequestBody StartRentalRequestDTO request,
-            Authentication auth
+            @Valid @RequestBody StartRentalRequestDTO request
     ) {
-        log.info("Received request: {}", request);
-        log.info("Auth: {}", auth.getName());
-
         // Get current user by email
-        String email = auth.getName();
-        UserResponseDTO user = userService.findUserByEmail(email);
+        // You'll need to get userId from UserService
+        // For now, assuming userId is passed in request
 
         RentalResponseDTO rental = rentalService.startRental(
-                user.id(),
+                request.userId(), // This should come from auth context
                 request.transportId(),
                 request.startLatitude(),
                 request.startLongitude()
@@ -61,13 +52,11 @@ public class RentalController {
      */
     @PostMapping("/end")
     public ResponseEntity<RentalResponseDTO> endRental(
-            @Valid @RequestBody EndRentalRequestDTO request,
-            Authentication auth
+            @Valid @RequestBody EndRentalRequestDTO request
     ) {
-        String email = auth.getName();
-        UserResponseDTO user = userService.findUserByEmail(email);
+        // Get userId from auth context
         RentalResponseDTO rental = rentalService.endRental(
-                user.id(),
+                request.userId(), // This should come from auth context
                 request.endLatitude(),
                 request.endLongitude()
         );
@@ -80,11 +69,9 @@ public class RentalController {
      */
     @PostMapping("/cancel")
     public ResponseEntity<Void> cancelRental(
-            Authentication auth
+            @RequestParam Long userId // Should come from auth context
     ) {
-        String email = auth.getName();
-        UserResponseDTO user = userService.findUserByEmail(email);
-        rentalService.cancelRental(user.id());
+        rentalService.cancelRental(userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -93,11 +80,9 @@ public class RentalController {
      */
     @GetMapping("/active")
     public ResponseEntity<RentalResponseDTO> getActiveRental(
-            Authentication auth
+            @RequestParam Long userId // Should come from auth context
     ) {
-        String email = auth.getName();
-        UserResponseDTO user = userService.findUserByEmail(email);
-        Optional<RentalResponseDTO> activeRental = rentalService.getActiveRental(user.id());
+        Optional<RentalResponseDTO> activeRental = rentalService.getActiveRental(userId);
         return ResponseEntity.ok(activeRental.orElse(null));
     }
 
@@ -106,13 +91,11 @@ public class RentalController {
      */
     @GetMapping("/history")
     public ResponseEntity<PageResponseDTO<RentalResponseDTO>> getRentalHistory(
+            @RequestParam Long userId, // Should come from auth context
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size,
-            Authentication auth
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     ) {
-        String email = auth.getName();
-        UserResponseDTO user = userService.findUserByEmail(email);
-        PageResponseDTO<RentalResponseDTO> result = rentalService.getUserRentalHistory(user.id(), page, size);
+        PageResponseDTO<RentalResponseDTO> result = rentalService.getUserRentalHistory(userId, page, size);
         return ResponseEntity.ok(result);
     }
 }

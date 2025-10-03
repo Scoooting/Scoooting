@@ -109,18 +109,6 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public List<UserResponseDTO> findUsersWithFilters(String email, String name, Integer page, Integer size) {
-        int offset = page * size;
-        List<User> users = userRepository.findUsersWithFilters(email, name, size, offset);
-        return users.stream()
-                .map(this::toResponseDTO)
-                .toList();
-    }
-
-    public long countUsersWithFilters(String email, String name) {
-        return userRepository.countUsersWithFilters(email, name);
-    }
-
     private UserResponseDTO toResponseDTO(User user) {
         String roleName = roleRepository.findById(user.getRoleId())
                 .map(UserRole::getName).orElse("UNKNOWN");

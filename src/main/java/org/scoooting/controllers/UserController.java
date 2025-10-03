@@ -8,14 +8,14 @@ import org.scoooting.dto.response.UserResponseDTO;
 import org.scoooting.services.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.scoooting.dto.common.PageResponseDTO;
 import org.scoooting.dto.request.UpdateUserRequestDTO;
 import org.scoooting.dto.request.UserRegistrationRequestDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,25 +31,22 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(user);
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<UserResponseDTO> getCurrentUser(Authentication auth) {
-        UserResponseDTO user = userService.findUserByEmail(auth.getName());
+    @GetMapping("/{email}")
+    public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
+        UserResponseDTO user = userService.findUserByEmail(email);
         return ResponseEntity.ok(user);
     }
 
     @GetMapping
-    public ResponseEntity<List<UserResponseDTO>> getUsers(
+    public ResponseEntity<PageResponseDTO<UserResponseDTO>> getUsers(
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     ) {
-        List<UserResponseDTO> users = userService.findUsersWithFilters(email, name, page, size);
-        long totalCount = userService.countUsersWithFilters(email, name);
-
-        return ResponseEntity.ok()
-                .header("X-Total-Count", String.valueOf(totalCount))
-                .body(users);    }
+        PageResponseDTO<UserResponseDTO> users = userService.getUsers(email, name, page, size);
+        return ResponseEntity.ok(users);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {

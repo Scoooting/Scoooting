@@ -44,7 +44,4 @@ public interface TransportRepository extends CrudRepository<Transport, Long> {
         AND status_id = (SELECT id FROM transport_statuses WHERE name = 'AVAILABLE')
         """)
     long countAvailableByType(TransportType type);
-
-    @Query("SELECT * FROM transports ORDER BY id LIMIT :limit OFFSET :offset")
-    List<Transport> findAllWithPagination(int offset, int limit);
 }

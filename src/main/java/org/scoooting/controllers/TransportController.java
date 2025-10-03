@@ -2,8 +2,6 @@ package org.scoooting.controllers;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.dto.response.TransportResponseDTO;
 import org.scoooting.entities.enums.TransportType;
@@ -90,15 +88,5 @@ public class TransportController {
     ) {
         TransportResponseDTO transport = transportService.updateTransportStatus(id, status);
         return ResponseEntity.ok(transport);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<TransportResponseDTO>> getAllTransports(
-            @RequestParam(defaultValue = "0") @Min(0) Integer page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer size
-    ) {
-        List<TransportResponseDTO> transports = transportService.findAllTransports(page, size);
-        // Without X-Total-Count header - infinite scrolling
-        return ResponseEntity.ok(transports);
     }
 }
