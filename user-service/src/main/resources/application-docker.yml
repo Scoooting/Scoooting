@@ -22,3 +22,10 @@ spring:
 jwt:
   secret: "your-super-secret-key-at-least-256-bits-long-for-production-change-this"
   expiration: 86400000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
