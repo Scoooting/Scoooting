@@ -5,4 +5,4 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
   instance:
-    hostname: localhost
+    hostname: ${EUREKA_HOST_NAME:eureka-server}

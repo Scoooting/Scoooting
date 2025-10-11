@@ -2,10 +2,11 @@
 **/.idea
 **/build
 **/*.iml
-**/application-dev.yml
+**/application-local.yml
 **/*.env
 *.env
-.env
+eureka/.env
+configs
 
 **/HELP.md
 !gradle/wrapper/gradle-wrapper.jar
