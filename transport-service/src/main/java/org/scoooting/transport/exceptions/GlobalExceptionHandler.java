@@ -1,5 +1,6 @@
 package org.scoooting.transport.exceptions;
 
+import feign.FeignException;
 import org.scoooting.transport.dto.common.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,21 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponseDTO> handleFeignException(
+            FeignException ex,
+            WebRequest request
+    ) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "FEIGN",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(ex.status()).body(error);
+    }
 
     @ExceptionHandler(TransportNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleTransportNotFound(

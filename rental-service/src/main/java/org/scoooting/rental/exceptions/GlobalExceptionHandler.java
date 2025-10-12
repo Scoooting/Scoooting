@@ -1,9 +1,7 @@
 package org.scoooting.rental.exceptions;
 
+import feign.FeignException;
 import org.scoooting.rental.dto.common.ErrorResponseDTO;
-import org.scoooting.rental.exceptions.common.DataNotFoundException;
-import org.scoooting.rental.exceptions.transport.TransportNotFoundException;
-import org.scoooting.rental.exceptions.user.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -19,19 +17,19 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleUserNotFound(
-            UserNotFoundException ex,
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponseDTO> handleFeignException(
+            FeignException ex,
             WebRequest request
     ) {
         ErrorResponseDTO error = new ErrorResponseDTO(
                 ex.getMessage(),
-                "USER_NOT_FOUND",
+                "FEIGN",
                 LocalDateTime.now(),
                 request.getDescription(false).replace("uri=", ""),
                 null
         );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return ResponseEntity.status(ex.status()).body(error);
     }
 
     @ExceptionHandler(DataNotFoundException.class)
@@ -49,20 +47,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    @ExceptionHandler(TransportNotFoundException.class)
-    public ResponseEntity<ErrorResponseDTO> handleTransportNotFound(
-            TransportNotFoundException ex,
-            WebRequest request
-    ) {
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                ex.getMessage(),
-                "TRANSPORT_NOT_FOUND",
-                LocalDateTime.now(),
-                request.getDescription(false).replace("uri=", ""),
-                null
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationErrors(

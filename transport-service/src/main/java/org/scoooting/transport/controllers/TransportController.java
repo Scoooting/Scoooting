@@ -1,8 +1,11 @@
 package org.scoooting.transport.controllers;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.ws.rs.PUT;
 import lombok.RequiredArgsConstructor;
+import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.enums.TransportType;
 import org.scoooting.transport.services.TransportService;
@@ -35,7 +38,7 @@ public class TransportController {
     }
 
     /**
-     * Get nearest transports by specific type
+     * Get the nearest transports by specific type
      */
     @GetMapping("/nearest/{type}")
     public ResponseEntity<List<TransportResponseDTO>> findNearestTransportsByType(
@@ -46,6 +49,14 @@ public class TransportController {
     ) {
         List<TransportResponseDTO> transports = transportService.findTransportsByType(type, lat, lng, radiusKm);
         return ResponseEntity.ok(transports);
+    }
+
+    /**
+     * Get transport status id
+     */
+    @GetMapping("/status/{name}")
+    public ResponseEntity<Long> getTransportStatusId(@PathVariable String name) {
+        return ResponseEntity.ok(transportService.getStatusId(name));
     }
 
     /**
@@ -87,5 +98,11 @@ public class TransportController {
     ) {
         TransportResponseDTO transport = transportService.updateTransportStatus(id, status);
         return ResponseEntity.ok(transport);
+    }
+
+    @PutMapping("/update-coordinates")
+    public ResponseEntity<Void> updateTransportCoordinates(@Valid @RequestBody UpdateCoordinatesDTO updateCoordinatesDTO) {
+        transportService.updateCoordinates(updateCoordinatesDTO);
+        return ResponseEntity.ok().build();
     }
 }

@@ -1,6 +1,8 @@
 package org.scoooting.transport.services;
 
 import lombok.RequiredArgsConstructor;
+import org.scoooting.transport.clients.UserClient;
+import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.Transport;
 import org.scoooting.transport.entities.TransportStatus;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class TransportService {
     private final TransportStatusRepository statusRepository;
 //    private final CityRepository cityRepository; TODO
     private final TransportMapper transportMapper;
+    private final UserClient userClient;
 
     @Transactional(readOnly = true)
     public List<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
@@ -38,9 +42,7 @@ public class TransportService {
                 lng - lngRange, lng + lngRange
         );
 
-        return transports.stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return transportMapper.toResponseDTOList(transports);
     }
 
     @Transactional(readOnly = true)
@@ -54,9 +56,7 @@ public class TransportService {
                 type, lat - latRange, lat + latRange, lng - lngRange, lng + lngRange
         );
 
-        return transports.stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return transportMapper.toResponseDTOList(transports);
     }
 
     @Transactional(readOnly = true)
@@ -69,9 +69,7 @@ public class TransportService {
     @Transactional(readOnly = true)
     public List<TransportResponseDTO> findAvailableTransportsByType(TransportType type) {
         List<Transport> transports = transportRepository.findAvailableByType(type);
-        return transports.stream()
-                .map(this::toResponseDTO)
-                .toList();
+        return transports.stream().map(this::toResponseDTO).toList();
     }
 
     @Transactional(readOnly = true)
@@ -99,12 +97,26 @@ public class TransportService {
         return toResponseDTO(transport);
     }
 
+    public Long getStatusId(String name) {
+        Optional<TransportStatus> optionalTransportStatus = statusRepository.findByName(name);
+        if (optionalTransportStatus.isPresent())
+            return optionalTransportStatus.get().getId();
+
+        throw new DataNotFoundException("Status not found");
+    }
+
+    public void updateCoordinates(UpdateCoordinatesDTO updateCoordinatesDTO) {
+        Transport transport = transportRepository.findById(updateCoordinatesDTO.transportId()).orElseThrow();
+        transport.setLatitude(updateCoordinatesDTO.latitude());
+        transport.setLongitude(updateCoordinatesDTO.latitude());
+
+        transportRepository.save(transport);
+    }
+
     private TransportResponseDTO toResponseDTO(Transport transport) {
-//        String statusName = statusRepository.findById(transport.getStatusId())
-//                .map(TransportStatus::getName).orElse("UNKNOWN");
-//        String cityName = transport.getCityId() != null ?
-//                cityRepository.findById(transport.getCityId()).map(City::getName).orElse(null) : null;
-//        return transportMapper.toResponseDTO(transport, statusName, cityName);
-        return null;
+        String statusName = statusRepository.findById(transport.getStatusId())
+                .map(TransportStatus::getName).orElse("UNKNOWN");
+        String cityName = transport.getCityId() != null ? userClient.getCityById(transport.getCityId()).getBody() : null;
+        return transportMapper.toResponseDTO(transport, statusName, cityName);
     } // TODO
 }

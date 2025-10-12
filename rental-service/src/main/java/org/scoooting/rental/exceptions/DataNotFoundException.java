@@ -1,4 +1,4 @@
-package org.scoooting.rental.exceptions.common;
+package org.scoooting.rental.exceptions;
 
 public class DataNotFoundException extends RuntimeException {
     public DataNotFoundException(String message) {

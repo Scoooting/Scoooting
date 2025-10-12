@@ -26,79 +26,76 @@ import java.util.Optional;
 @Validated
 public class RentalController {
 
-//    private final RentalService rentalService;
-//
-//    /**
-//     * Start a new rental
-//     */
-//    @PostMapping("/start")
-//    public ResponseEntity<RentalResponseDTO> startRental(
-//            @Valid @RequestBody StartRentalRequestDTO request
-//    ) {
-//        // Get current user by email
-//        // You'll need to get userId from UserService
-//        // For now, assuming userId is passed in request
-//
-//        RentalResponseDTO rental = rentalService.startRental(
-//                request.userId(), // This should come from auth context
-//                request.transportId(),
-//                request.startLatitude(),
-//                request.startLongitude()
-//        );
-//
-//        return ResponseEntity.status(HttpStatus.CREATED).body(rental);
-//    }
-//
-//    /**
-//     * End current active rental
-//     */
-//    @PostMapping("/end")
-//    public ResponseEntity<RentalResponseDTO> endRental(
-//            @Valid @RequestBody EndRentalRequestDTO request
-//    ) {
-//        // Get userId from auth context
-//        RentalResponseDTO rental = rentalService.endRental(
-//                request.userId(), // This should come from auth context
-//                request.endLatitude(),
-//                request.endLongitude()
-//        );
-//
-//        return ResponseEntity.ok(rental);
-//    }
-//
-//    /**
-//     * Cancel current active rental
-//     */
-//    @PostMapping("/cancel")
-//    public ResponseEntity<Void> cancelRental(
-//            @RequestParam Long userId // Should come from auth context
-//    ) {
-//        rentalService.cancelRental(userId);
-//        return ResponseEntity.noContent().build();
-//    }
-//
-//    /**
-//     * Get user's current active rental
-//     */
-//    @GetMapping("/active")
-//    public ResponseEntity<RentalResponseDTO> getActiveRental(
-//            @RequestParam Long userId // Should come from auth context
-//    ) {
-//        Optional<RentalResponseDTO> activeRental = rentalService.getActiveRental(userId);
-//        return ResponseEntity.ok(activeRental.orElse(null));
-//    }
-//
-//    /**
-//     * Get user's rental history with pagination
-//     */
-//    @GetMapping("/history")
-//    public ResponseEntity<PageResponseDTO<RentalResponseDTO>> getRentalHistory(
-//            @RequestParam Long userId, // Should come from auth context
-//            @RequestParam(defaultValue = "0") @Min(0) Integer page,
-//            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
-//    ) {
-//        PageResponseDTO<RentalResponseDTO> result = rentalService.getUserRentalHistory(userId, page, size);
-//        return ResponseEntity.ok(result);
-//    }
+    private final RentalService rentalService;
+
+    /**
+     * Start a new rental
+     */
+    @PostMapping("/start")
+    public ResponseEntity<RentalResponseDTO> startRental(
+            @Valid @RequestBody StartRentalRequestDTO request
+    ) {
+        // Get current user by email
+        // You'll need to get userId from UserService
+        // For now, assuming userId is passed in request
+
+        RentalResponseDTO rental = rentalService.startRental(
+                request.userId(), // This should come from auth context
+                request.transportId(),
+                request.startLatitude(),
+                request.startLongitude()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(rental);
+    }
+
+    /**
+     * End current active rental
+     */
+    @PostMapping("/end")
+    public ResponseEntity<RentalResponseDTO> endRental(
+            @Valid @RequestBody EndRentalRequestDTO request
+    ) {
+        // Get userId from auth context
+        RentalResponseDTO rental = rentalService.endRental(
+                request.userId(), // This should come from auth context
+                request.endLatitude(),
+                request.endLongitude()
+        );
+
+        return ResponseEntity.ok(rental);
+    }
+
+    /**
+     * Cancel current active rental
+     */
+    @PostMapping("/cancel")
+    public ResponseEntity<Void> cancelRental(
+            @RequestParam Long userId // Should come from auth context
+    ) {
+        rentalService.cancelRental(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Get user's current active rental
+     */
+    @GetMapping("/active")
+    public ResponseEntity<RentalResponseDTO> getActiveRental(@RequestParam Long userId) {
+        return ResponseEntity.ok(rentalService.getActiveRental(userId));
+    }
+
+    /**
+     * Get user's rental history with pagination
+     */
+    @GetMapping("/history")
+    public ResponseEntity<PageResponseDTO<RentalResponseDTO>> getRentalHistory(
+            @RequestParam Long userId, // Should come from auth context
+            @RequestParam(defaultValue = "0") @Min(0) Integer page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
+    ) {
+        PageResponseDTO<RentalResponseDTO> result = rentalService.getUserRentalHistory(userId, page, size);
+        return ResponseEntity.ok(result);
+    }
 }
 

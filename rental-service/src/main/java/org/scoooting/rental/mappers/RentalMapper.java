@@ -13,14 +13,8 @@ import java.util.List;
 public interface RentalMapper {
 
     // Entity -> Response DTO
-    @Mapping(target = "userName", source = "userName")
-    @Mapping(target = "transportType", source = "transportType")
-    @Mapping(target = "status", source = "statusName")
     RentalResponseDTO toResponseDTO(
-            Rental rental,
-            String userName,
-            String transportType,
-            String statusName
+            Rental rental
     );
 
     // Request DTO -> Entity

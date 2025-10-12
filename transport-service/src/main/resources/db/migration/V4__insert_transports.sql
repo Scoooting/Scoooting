@@ -10,7 +10,7 @@ do $$
                 select
                     transport_name,
                     (select id from transport_statuses where name = 'AVAILABLE'),
-                    0,
+                    1,
                     59.823535 + (random() * (60.041664 - 59.823535)),
                     30.184844 + (random() * (30.431322 - 30.184844))
                 from generate_series(1, 30);

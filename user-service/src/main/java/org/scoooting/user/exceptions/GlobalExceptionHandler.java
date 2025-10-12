@@ -62,21 +62,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-//    @ExceptionHandler(TransportNotFoundException.class)
-//    public ResponseEntity<ErrorResponseDTO> handleTransportNotFound(
-//            TransportNotFoundException ex,
-//            WebRequest request
-//    ) {
-//        ErrorResponseDTO error = new ErrorResponseDTO(
-//                ex.getMessage(),
-//                "TRANSPORT_NOT_FOUND",
-//                LocalDateTime.now(),
-//                request.getDescription(false).replace("uri=", ""),
-//                null
-//        );
-//        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-//    } TODO
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponseDTO> handleValidationErrors(
             MethodArgumentNotValidException ex,

@@ -45,13 +45,13 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/user/{id}")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
         UserResponseDTO user = userService.findUserById(id);
         return ResponseEntity.ok(user);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/update-user/{id}")
     public ResponseEntity<UserResponseDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequestDTO request
