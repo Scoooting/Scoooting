@@ -1,9 +1,38 @@
-.gradle
-.idea
-build
-HELP.md
+**/.gradle
+**/.idea
+**/build
 **/*.iml
-**/application-dev.yml
+**/application-local.yml
 **/*.env
 *.env
-.env
+eureka/.env
+configs
+
+**/HELP.md
+!gradle/wrapper/gradle-wrapper.jar
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/

@@ -3,7 +3,7 @@
 ### Аренда электросамокатов. ###
 
 ---
-После клонирования репозитория ввести команду:
+После клонирования репозитория ввести команду (сейчас не работает):
 ```
 docker compose up --build -d
 ```
@@ -158,4 +158,3 @@ erDiagram
 
 |<img width="3840" height="1499" alt="Untitled diagram _ Mermaid Chart-2025-09-28-225001" src="https://github.com/user-attachments/assets/370db482-e16c-4b9f-b7c7-63006dee0f8f" />|
 |-|
-
