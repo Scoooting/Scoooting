@@ -6,5 +6,5 @@ RUN gradle bootJar
 FROM openjdk:21
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
-EXPOSE 8083
+EXPOSE 8888
 ENTRYPOINT ["java", "-jar", "app.jar"]

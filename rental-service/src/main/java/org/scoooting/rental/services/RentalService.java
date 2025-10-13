@@ -23,10 +23,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Просто нафиг закомментил всё, потому что сервис очень жестко связан с остальными двумя. Сори, за русский :).
- */
-
 @Service
 @RequiredArgsConstructor
 @Transactional
