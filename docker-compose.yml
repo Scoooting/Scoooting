@@ -9,12 +9,28 @@ services:
       - 5432:5432
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init_db.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  db-init:
+    image: postgres:latest
+    container_name: db-init
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: postgres_pass
+    command: >
+      sh -c "
+        psql -h db -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'users_db'\" | grep -q 1 || psql -h db -U postgres -c 'CREATE DATABASE users_db;' &&
+        psql -h db -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'transports_db'\" | grep -q 1 || psql -h db -U postgres -c 'CREATE DATABASE transports_db;' &&
+        psql -h db -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'rentals_db'\" | grep -q 1 || psql -h db -U postgres -c 'CREATE DATABASE rentals_db;' &&
+        echo 'Databases created successfully!'
+      "
+    restart: "no"
 
   eureka-server:
     build: ./eureka
@@ -34,8 +50,8 @@ services:
     build: ./config-server
     container_name: config-server
     environment:
-        - CONFIG_USERNAME=${CONFIG_USERNAME}
-        - CONFIG_TOKEN=${CONFIG_TOKEN}
+      - CONFIG_USERNAME=${CONFIG_USERNAME}
+      - CONFIG_TOKEN=${CONFIG_TOKEN}
     ports:
       - 8888:8888
     depends_on:
@@ -55,8 +71,8 @@ services:
     ports:
       - 8081:8081
     depends_on:
-      db:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
       config-server:
         condition: service_healthy
       eureka-server:
@@ -71,8 +87,8 @@ services:
     ports:
       - 8082:8082
     depends_on:
-      db:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
       config-server:
         condition: service_healthy
       eureka-server:
@@ -87,8 +103,8 @@ services:
     ports:
       - 8083:8083
     depends_on:
-      db:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
       config-server:
         condition: service_healthy
       eureka-server:

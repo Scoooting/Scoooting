@@ -27,7 +27,6 @@ public class TransportService {
 
     private final TransportRepository transportRepository;
     private final TransportStatusRepository statusRepository;
-//    private final CityRepository cityRepository; TODO
     private final TransportMapper transportMapper;
     private final UserClient userClient;
 
@@ -108,7 +107,7 @@ public class TransportService {
     public void updateCoordinates(UpdateCoordinatesDTO updateCoordinatesDTO) {
         Transport transport = transportRepository.findById(updateCoordinatesDTO.transportId()).orElseThrow();
         transport.setLatitude(updateCoordinatesDTO.latitude());
-        transport.setLongitude(updateCoordinatesDTO.latitude());
+        transport.setLongitude(updateCoordinatesDTO.longitude());
 
         transportRepository.save(transport);
     }
@@ -118,5 +117,5 @@ public class TransportService {
                 .map(TransportStatus::getName).orElse("UNKNOWN");
         String cityName = transport.getCityId() != null ? userClient.getCityById(transport.getCityId()).getBody() : null;
         return transportMapper.toResponseDTO(transport, statusName, cityName);
-    } // TODO
+    }
 }

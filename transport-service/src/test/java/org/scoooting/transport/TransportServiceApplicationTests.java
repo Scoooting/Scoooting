@@ -4,22 +4,29 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.scoooting.transport.controllers.TransportController;
+import org.scoooting.transport.clients.UserClient;
+import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.Transport;
 import org.scoooting.transport.entities.enums.TransportType;
+import org.scoooting.transport.exceptions.DataNotFoundException;
+import org.scoooting.transport.exceptions.TransportNotFoundException;
 import org.scoooting.transport.repositories.TransportRepository;
 import org.scoooting.transport.services.TransportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -34,6 +41,9 @@ class TransportServiceApplicationTests {
 
     @Autowired
     private TransportRepository transportRepository;
+
+    @MockitoBean
+    private UserClient userClient;
 
     private final Double lat = 59.95662;
     private final Double lon = 30.398804;
@@ -72,58 +82,78 @@ class TransportServiceApplicationTests {
     @ParameterizedTest
     @EnumSource(TransportType.class)
     void findNearestTransportByTypeTest(TransportType type) {
+        when(userClient.getCityById(1L)).thenReturn(ResponseEntity.ok("SPB"));
         List<TransportResponseDTO> transports = transportService.findTransportsByType(type, lat, lon, radius);
         assertEquals(type.toString(), transports.get(0).type());
         assertEquals(1, transports.size());
     }
 
-//    @Test
-//    void getTransportByIdTest() {
-//        for (Long id : transportsIds) {
-//            TransportResponseDTO transport = transportService.getTransport(id).getBody();
-//            assertEquals(transport.id(), id);
-//        }
-//    }
-//
-//    @Test
-//    void getTransportByIdNotFoundTest() {
-//        Exception exception = assertThrows(TransportNotFoundException.class,
-//                () -> transportService.getTransport(-1L));
-//        assertEquals("Transport not found", exception.getMessage());
-//    }
-//
-//    @ParameterizedTest
-//    @EnumSource(TransportType.class)
-//    void findAvailableTransportsByTypeTest(TransportType type) {
-//        List<TransportResponseDTO> transports = transportService.findAvailableTransportsByType(type).getBody();
-//        assertEquals(1, getTestTransports(transports).size());
-//    }
-//
-//    @Test
-//    void getAvailabilityStatsTest() {
-//        Map<String, Long> stats = transportService.getAvailabilityStats().getBody();
-//        for (TransportType type : TransportType.values())
-//            assertEquals(30, stats.get(type.toString()));
-//    }
-//
-//    @Test
-//    void updateTransportStatusTest() {
-//        Long id = transportsIds.get(0);
-//        TransportResponseDTO transport = transportService.updateTransportStatus(id, "IN_USE").getBody();
-//        assertEquals(transport.status(), "IN_USE");
-//        transportService.updateTransportStatus(id, "AVAILABLE");
-//    }
-//
-//    @Test
-//    void updateTransportStatusExceptionsTest() {
-//        Long id = transportsIds.get(0);
-//        Exception exception = assertThrows(TransportNotFoundException.class,
-//                () -> transportService.updateTransportStatus(-1L, "IN_USE"));
-//        assertEquals("Transport not found", exception.getMessage());
-//
-//        exception = assertThrows(DataNotFoundException.class,
-//                () -> transportService.updateTransportStatus(id, "HAHA"));
-//        assertEquals("Status not found", exception.getMessage());
-//    }
+    @Test
+    void getTransportByIdTest() {
+        when(userClient.getCityById(1L)).thenReturn(ResponseEntity.ok("SPB"));
+        for (Transport transport : transports) {
+            TransportResponseDTO transportDto = transportService.getTransportById(transport.getId());
+            assertEquals(transport.getId(), transportDto.id());
+        }
+    }
 
+    @Test
+    void getTransportByIdNotFoundTest() {
+        Exception exception = assertThrows(TransportNotFoundException.class,
+                () -> transportService.getTransportById(-1L));
+        assertEquals("Transport not found", exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransportType.class)
+    void findAvailableTransportsByTypeTest(TransportType type) {
+        when(userClient.getCityById(1L)).thenReturn(ResponseEntity.ok("SPB"));
+        List<TransportResponseDTO> transports = transportService.findAvailableTransportsByType(type);
+        assertEquals(1, transports.size());
+    }
+
+    @Test
+    void getAvailabilityStatsTest() {
+        Map<String, Long> stats = transportService.getAvailabilityStats();
+        for (TransportType type : TransportType.values())
+            assertEquals(1, stats.get(type.toString()));
+    }
+
+    @Test
+    void updateTransportStatusTest() {
+        when(userClient.getCityById(1L)).thenReturn(ResponseEntity.ok("SPB"));
+        Transport transport = transports.get(0);
+        TransportResponseDTO transportDto = transportService.updateTransportStatus(transport.getId(), "IN_USE");
+        assertEquals(transportDto.status(), "IN_USE");
+    }
+
+    @Test
+    void updateTransportStatusExceptionsTest() {
+        Exception exception = assertThrows(TransportNotFoundException.class,
+                () -> transportService.updateTransportStatus(-1L, "IN_USE"));
+        assertEquals("Transport not found", exception.getMessage());
+
+        exception = assertThrows(DataNotFoundException.class,
+                () -> transportService.updateTransportStatus(transports.get(0).getId(), "HAHA"));
+        assertEquals("Status not found", exception.getMessage());
+    }
+
+    @Test
+    void getStatusIdTest() {
+        Long statusId = transportService.getStatusId("IN_USE");
+        assertEquals(2, statusId);
+
+        Exception exception = assertThrows(DataNotFoundException.class,
+                () -> transportService.getStatusId("HAHA"));
+        assertEquals("Status not found", exception.getMessage());
+    }
+
+    @Test
+    void updateCoordinatesTest() {
+        Transport transport = transports.get(0);
+        transportService.updateCoordinates(new UpdateCoordinatesDTO(transport.getId(), 40.0, 50.0));
+        Transport updatedTransport = transportRepository.findById(transport.getId()).orElseThrow();
+        assertEquals(40.0, updatedTransport.getLatitude());
+        assertEquals(50.0, updatedTransport.getLongitude());
+    }
 }
