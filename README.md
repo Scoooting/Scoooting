@@ -158,3 +158,19 @@ erDiagram
 
 |<img width="3840" height="1499" alt="Untitled diagram _ Mermaid Chart-2025-09-28-225001" src="https://github.com/user-attachments/assets/370db482-e16c-4b9f-b7c7-63006dee0f8f" />|
 |-|
+
+## Circuit Breaker
+
+### FSM
+
+|<img width="1190" height="1098" alt="image_2025-10-26_01-35-09" src="https://github.com/user-attachments/assets/1f61303a-18f8-4d58-8369-2bd91a03482e" />|
+|-|
+
+### Demo
+
+|1. CLOSED -> OPEN |<img width="1280" height="1019" alt="image" src="https://github.com/user-attachments/assets/a4fc9e17-cc10-4498-84d1-43bf095b56b9" />|
+|-|-|
+|**2. OPEN -> HALF_OPEN**|<img width="1076" height="673" alt="image" src="https://github.com/user-attachments/assets/77a2fb46-c0e0-4fcb-a8eb-e807896f5d6b" />|
+|**3. HALF_OPEN -> CLOSED**|<img width="1280" height="540" alt="image" src="https://github.com/user-attachments/assets/b1d16a5d-07e7-4043-a15d-be5323e2160f" />|
+
+
