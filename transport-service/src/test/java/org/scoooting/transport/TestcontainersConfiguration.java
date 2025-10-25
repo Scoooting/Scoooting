@@ -9,6 +9,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -20,10 +22,11 @@ import java.util.Map;
 import java.util.Properties;
 
 @TestConfiguration(proxyBeanMethods = false)
+@Testcontainers
 class TestcontainersConfiguration {
 
     private static final Network NETWORK = Network.newNetwork();
-    private final Map<String, String> envVars = readEnvFile();
+    private static final Map<String, String> envVars = readEnvFile();
 
     @Bean
     public Network network() {
@@ -46,10 +49,8 @@ class TestcontainersConfiguration {
         return envVars;
     }
 
-    @Bean
-    @ServiceConnection
-    public PostgreSQLContainer<?> postgreSQLContainer() {
-        return new PostgreSQLContainer<>("postgres:latest")
+    @Container
+    static PostgreSQLContainer<?> postgreSQLContainer =  new PostgreSQLContainer<>("postgres:latest")
                 .withExposedPorts(5432)
                 .withUsername("postgres")
                 .withPassword("postgres_pass")
@@ -59,26 +60,16 @@ class TestcontainersConfiguration {
                         MountableFile.forClasspathResource("init_db.sql"),
                         "/docker-entrypoint-initdb.d/init.sql"
                 );
-    }
-
-    @DynamicPropertySource
-    void dynamicProperties(DynamicPropertyRegistry registry) {
-
-    }
-
-    @Bean
-    public GenericContainer<?> eurekaServerContainer() {
-        return new GenericContainer<>(
+    @Container
+    static GenericContainer<?> eurekaServerContainer = new GenericContainer<>(
                 DockerImageName.parse("scoooting-eureka-server:latest"))
                 .withNetwork(NETWORK)
                 .withNetworkAliases("eureka-server")
                 .withExposedPorts(8761)
                 .waitingFor(Wait.forHttp("/actuator/health").forPort(8761));
-    }
 
-    @Bean
-    public GenericContainer<?> configServerContainer() {
-        return new GenericContainer<>(
+    @Container
+    static GenericContainer<?> configServerContainer = new GenericContainer<>(
                 DockerImageName.parse("scoooting-config-server:latest"))
                 .withNetwork(NETWORK)
                 .withNetworkAliases("config-server")
@@ -86,15 +77,9 @@ class TestcontainersConfiguration {
                 .withEnv("CONFIG_USERNAME", envVars.get("CONFIG_USERNAME"))
                 .withEnv("CONFIG_TOKEN", envVars.get("CONFIG_TOKEN"))
                 .waitingFor(Wait.forHttp("/actuator/health").forPort(8888));
-    }
 
-    @Bean
-    public GenericContainer<?> userServiceContainer(
-            PostgreSQLContainer<?> postgreSQLContainer,
-            GenericContainer<?> eurekaServerContainer,
-            GenericContainer<?> configServerContainer) {
-
-        return new GenericContainer(
+    @Container
+    static GenericContainer<?> userServiceContainer = new GenericContainer<>(
                 DockerImageName.parse("scoooting-user-service:latest"))
                 .withNetwork(NETWORK)
                 .withNetworkAliases("user-service")
@@ -102,6 +87,11 @@ class TestcontainersConfiguration {
                 .withEnv("CONFIG_SERVER_URI", "http://config-server:8888")
                 .withEnv("POSTGRES_URL", "jdbc:postgresql://postgres-test:5432/users_db")
                 .dependsOn(postgreSQLContainer, eurekaServerContainer, configServerContainer);
-    }
 
+    static {
+        postgreSQLContainer.start();
+        eurekaServerContainer.start();
+        configServerContainer.start();
+        userServiceContainer.start();
+    }
 }
