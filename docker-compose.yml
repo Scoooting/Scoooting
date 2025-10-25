@@ -50,8 +50,8 @@ services:
     build: ./config-server
     container_name: config-server
     environment:
-        - CONFIG_USERNAME=${CONFIG_USERNAME}
-        - CONFIG_TOKEN=${CONFIG_TOKEN}
+      - CONFIG_USERNAME=${CONFIG_USERNAME}
+      - CONFIG_TOKEN=${CONFIG_TOKEN}
     ports:
       - 8888:8888
     depends_on:

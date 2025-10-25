@@ -3,7 +3,6 @@ package org.scoooting.transport.controllers;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.ws.rs.PUT;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;

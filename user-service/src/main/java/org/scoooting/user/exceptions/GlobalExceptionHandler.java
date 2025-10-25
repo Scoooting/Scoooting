@@ -9,7 +9,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -98,24 +97,5 @@ public class GlobalExceptionHandler {
                 Map.of("details", ex.getMessage())
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<Map<String, Object>> handleTypeMismatch(
-            MethodArgumentTypeMismatchException ex
-    ) {
-        Map<String, Object> error = new HashMap<>();
-        error.put("message", "Invalid parameter type");
-        error.put("code", "BAD_REQUEST");
-        error.put("timestamp", LocalDateTime.now());
-        error.put("path", ex.getName());
-        error.put("details", String.format(
-                "Parameter '%s' must be a valid %s. Provided value: '%s'",
-                ex.getName(),
-                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "number",
-                ex.getValue()
-        ));
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 }

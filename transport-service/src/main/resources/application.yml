@@ -6,7 +6,8 @@ spring:
     name: transport-service
 
   config:
-    import: configserver:${CONFIG_SERVER_URI:http://config-server:8888}
+    import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}
   cloud:
     config:
       fail-fast: true
+

@@ -19,7 +19,6 @@ public interface RentalMapper {
 
     // Request DTO -> Entity
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "statusId", ignore = true)
     @Mapping(target = "startTime", expression = "java(java.time.LocalDateTime.now())")
     @Mapping(target = "endTime", ignore = true)
     @Mapping(target = "endLatitude", ignore = true)
