@@ -17,21 +17,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ErrorResponseDTO> handleFeignException(
-            FeignException ex,
-            WebRequest request
-    ) {
-        ErrorResponseDTO error = new ErrorResponseDTO(
-                ex.getMessage(),
-                "FEIGN",
-                LocalDateTime.now(),
-                request.getDescription(false).replace("uri=", ""),
-                null
-        );
-        return ResponseEntity.status(ex.status()).body(error);
-    }
-
     @ExceptionHandler(TransportNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleTransportNotFound(
             TransportNotFoundException ex,

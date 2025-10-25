@@ -1,7 +1,8 @@
 package org.scoooting.transport.services;
 
 import lombok.RequiredArgsConstructor;
-import org.scoooting.transport.clients.UserClient;
+import lombok.extern.slf4j.Slf4j;
+import org.scoooting.transport.clients.resilient.ResilientUserClient;
 import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.Transport;
@@ -23,12 +24,13 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class TransportService {
 
     private final TransportRepository transportRepository;
     private final TransportStatusRepository statusRepository;
     private final TransportMapper transportMapper;
-    private final UserClient userClient;
+    private final ResilientUserClient resilientUserClient;
 
     @Transactional(readOnly = true)
     public List<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
@@ -114,8 +116,11 @@ public class TransportService {
 
     public TransportResponseDTO toResponseDTO(Transport transport) {
         String statusName = statusRepository.findById(transport.getStatusId())
-                .map(TransportStatus::getName).orElse("UNKNOWN");
-        String cityName = transport.getCityId() != null ? userClient.getCityById(transport.getCityId()).getBody() : null;
+                .map(TransportStatus::getName)
+                .orElse("UNKNOWN");
+
+        String cityName = resilientUserClient.getCityName(transport.getCityId());
+
         return transportMapper.toResponseDTO(transport, statusName, cityName);
     }
 }
