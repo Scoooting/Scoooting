@@ -6,8 +6,37 @@ spring:
     name: transport-service
 
   config:
-    import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}
+    import: configserver:${CONFIG_SERVER_URI:http://config-server:8888}
   cloud:
     config:
       fail-fast: true
 
+resilience4j.circuitbreaker:
+  instances:
+    userService:
+      registerHealthIndicator: true
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 3
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 2
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      slidingWindowType: COUNT_BASED
+      recordExceptions:
+        - feign.FeignException
+        - java.io.IOException
+        - java.util.concurrent.TimeoutException
+      ignoreExceptions:
+        - org.scoooting.transport.exceptions.DataNotFoundException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always

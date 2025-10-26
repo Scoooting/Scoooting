@@ -1,5 +1,6 @@
 package org.scoooting.user.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.user.services.CityService;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ public class CityController {
     private final CityService cityService;
 
     @GetMapping("/city/{id}")
-    public ResponseEntity<String> getCityById(@PathVariable("id") Long id) {
+    public ResponseEntity<String> getCityById(@PathVariable("id") @Valid Long id) {
         return ResponseEntity.ok(cityService.getCityById(id));
     }
 }
