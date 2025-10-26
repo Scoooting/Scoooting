@@ -15,7 +15,7 @@ select
     'user' || gs || '@example.com',
     'User_' || gs,
      -- bcrypt hash for "password123"
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2a$10$ItLHJn0zvCfab4hzx5W58.MGpyY5crBXx3dlSQCEwO6ff0jXv6p.y',
     (select id from user_roles where name = 'USER'),
     (select id from cities where name = 'SPB')
 from generate_series(1, 102) as gs;

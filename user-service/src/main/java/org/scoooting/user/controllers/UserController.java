@@ -1,5 +1,8 @@
 package org.scoooting.user.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -22,19 +25,13 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<UserResponseDTO> registerUser(@Valid @RequestBody UserRegistrationRequestDTO request) {
-        UserResponseDTO user = userService.registerUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
-    }
-
     @GetMapping("/{email}")
     public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
         UserResponseDTO user = userService.findUserByEmail(email);
         return ResponseEntity.ok(user);
     }
 
-    @GetMapping
+    @GetMapping("/get-users")
     public ResponseEntity<PageResponseDTO<UserResponseDTO>> getUsers(
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String name,
