@@ -1,5 +1,6 @@
 package org.scoooting.user.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.user.dto.request.UserRegistrationRequestDTO;
@@ -8,6 +9,7 @@ import org.scoooting.user.exceptions.InvalidRefreshTokenException;
 import org.scoooting.user.exceptions.UserAlreadyExistsException;
 import org.scoooting.user.exceptions.UserNotFoundException;
 import org.scoooting.user.services.UserService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,8 +34,9 @@ public class AuthController {
     }
 
     @GetMapping("/refreshToken")
-    public ResponseEntity<?> refresh(@RequestHeader("Authorization") String authHeader)
+    public ResponseEntity<?> refresh(HttpServletRequest request)
             throws UserNotFoundException, InvalidRefreshTokenException {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         return ResponseEntity.ok(userService.refreshToken(authHeader.substring(7)));
     }
 

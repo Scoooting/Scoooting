@@ -20,6 +20,12 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    @Value("${jwt.access-duration}")
+    private int accessDuration;
+
+    @Value("${jwt.refresh-duration}")
+    private int refreshDuration;
+
     public JwtDto generateAuthToken(String email) {
         return new JwtDto(
                 generateJwtToken(email),
@@ -61,7 +67,7 @@ public class JwtService {
     }
 
     public String generateJwtToken(String email) {
-        Date date = Date.from(LocalDateTime.now().plusMinutes(15).atZone(ZoneId.systemDefault()).toInstant());
+        Date date = Date.from(LocalDateTime.now().plusSeconds(accessDuration).atZone(ZoneId.systemDefault()).toInstant());
         return Jwts.builder()
                 .subject(email)
                 .expiration(date)
@@ -70,7 +76,7 @@ public class JwtService {
     }
 
     public String generateRefreshToken(String email) {
-        Date date = Date.from(LocalDateTime.now().plusMinutes(60).atZone(ZoneId.systemDefault()).toInstant());
+        Date date = Date.from(LocalDateTime.now().plusSeconds(refreshDuration).atZone(ZoneId.systemDefault()).toInstant());
         return Jwts.builder()
                 .subject(email)
                 .expiration(date)

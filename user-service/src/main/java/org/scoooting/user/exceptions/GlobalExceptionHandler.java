@@ -19,7 +19,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidRefreshToken(
-            UserNotFoundException ex,
+            InvalidRefreshTokenException ex,
             WebRequest request
     ) {
         ErrorResponseDTO error = new ErrorResponseDTO(

@@ -5,47 +5,5 @@ spring:
   application:
     name: api-gateway
 
-  cloud:
-    gateway:
-      server:
-        webflux:
-          routes:
-            - id: user-service
-              uri: lb://user-service
-              predicates:
-                - Path=/user-service/**
-              filters:
-                - StripPrefix=1
-
-            - id: transport-service
-              uri: lb://transport-service
-              predicates:
-                - Path=/transport-service/**
-              filters:
-                - StripPrefix=1
-
-            - id: rental-service
-              uri: lb://rental-service
-              predicates:
-                - Path=/rental-service/**
-              filters:
-                - StripPrefix=1
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URI:http://eureka-server:8761/eureka/}
-
-springdoc:
-  swagger-ui:
-    urls:
-      - name: user-service
-        url: /user-service/v3/api-docs
-      - name: transport-service
-        url: /transport-service/v3/api-docs
-      - name: rental-service
-        url: /rental-service/v3/api-docs
-
-jwt:
-  secret: ${JWT_SECRET:yourSuperSecretKeyAtLeast256BitsLongForProductionChangeThis}
-  expiration: 86400000
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}

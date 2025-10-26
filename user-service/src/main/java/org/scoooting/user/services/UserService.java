@@ -46,6 +46,10 @@ public class UserService {
         Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findById(user.getId());
         if (optionalRefreshToken.isEmpty()) {
             refreshTokenRepository.insert(user.getId(), jwtDto.refreshToken());
+        } else {
+            RefreshToken refreshToken = optionalRefreshToken.get();
+            refreshToken.setToken(jwtDto.refreshToken());
+            refreshTokenRepository.save(refreshToken);
         }
 
         return jwtDto.accessToken();
@@ -139,6 +143,9 @@ public class UserService {
     }
 
     public String refreshToken(String token) throws UserNotFoundException, InvalidRefreshTokenException {
+        if (token == null)
+            throw new InvalidRefreshTokenException("Invalid refresh token!");
+
         String email = jwtService.getEmailFromToken(token);
         Optional<User> optionalUser = userRepository.findByEmail(email);
 
@@ -148,14 +155,14 @@ public class UserService {
             if (optionalRefreshToken.isPresent()) {
                 RefreshToken refreshToken = optionalRefreshToken.get();
                 if (jwtService.validateJwtToken(refreshToken.getToken()))
-                    return jwtService.refreshAuthToken(email);
+                    return addRefreshToken(user);
 
                 refreshTokenRepository.delete(refreshToken);
-                throw new InvalidRefreshTokenException("Невалидный refresh токен!");
+                throw new InvalidRefreshTokenException("Invalid refresh token!");
             }
         }
 
-        throw new UserNotFoundException("Пользователь не найден!");
+        throw new UserNotFoundException("User not found!");
     }
 
     private User findByCredentials(UserSignInDto userSignInDto) throws UserNotFoundException {
