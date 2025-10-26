@@ -5,17 +5,22 @@ import org.junit.jupiter.api.Test;
 import org.scoooting.user.dto.common.PageResponseDTO;
 import org.scoooting.user.dto.request.UpdateUserRequestDTO;
 import org.scoooting.user.dto.request.UserRegistrationRequestDTO;
+import org.scoooting.user.dto.request.UserSignInDto;
 import org.scoooting.user.dto.response.UserResponseDTO;
+import org.scoooting.user.entities.RefreshToken;
 import org.scoooting.user.entities.User;
+import org.scoooting.user.exceptions.InvalidRefreshTokenException;
 import org.scoooting.user.exceptions.UserAlreadyExistsException;
 import org.scoooting.user.exceptions.UserNotFoundException;
 import org.scoooting.user.exceptions.common.DataNotFoundException;
+import org.scoooting.user.repositories.RefreshTokenRepository;
 import org.scoooting.user.repositories.UserRepository;
 import org.scoooting.user.services.CityService;
 import org.scoooting.user.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -38,6 +43,12 @@ class UserServiceApplicationTests {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
     private final String testName = "user";
     private final String testEmail = "user1@example.com";
     private final String testPassword = "passHash";
@@ -49,7 +60,7 @@ class UserServiceApplicationTests {
         testUser = userRepository.save(User.builder()
                 .name(testName)
                 .email(testEmail)
-                .passwordHash(testPassword)
+                .passwordHash(passwordEncoder.encode(testPassword))
                 .roleId(1L)  // ⬅️ Убедитесь что роль существует
                 .cityId(1L)  // ⬅️ Убедитесь что город существует
                 .bonuses(0)
@@ -58,11 +69,11 @@ class UserServiceApplicationTests {
 
     @Test
     void registerUserTest() {
-        UserResponseDTO userResponseDTO = userService.registerUser(new UserRegistrationRequestDTO(
-                "user2@example.com", testName, testPassword, "SPB"));
-        User user = userRepository.findById(userResponseDTO.id()).orElseThrow();
-        assertEquals(userResponseDTO.id(), user.getId());
-        userRepository.delete(user);
+        String email = "user2@example.com";
+        userService.registerUser(new UserRegistrationRequestDTO(email, testName, testPassword,
+                "SPB"));
+        User user = userRepository.findByEmail(email).orElseThrow();
+        assertEquals(email, user.getEmail());
     }
 
     @Test
@@ -151,5 +162,35 @@ class UserServiceApplicationTests {
 
         Exception exception = assertThrows(DataNotFoundException.class, () -> cityService.getCityById(-1L));
         assertEquals("City not found", exception.getMessage());
+    }
+
+    @Test
+    void signInAndRefreshTokenTest() throws InterruptedException {
+        String token = userService.signIn(new UserSignInDto(testEmail, testPassword));
+        User user = userRepository.findByEmail(testEmail).orElseThrow();
+        RefreshToken refreshToken = refreshTokenRepository.findById(user.getId()).orElse(null);
+        assertNotNull(refreshToken);
+
+        Thread.sleep(1000);
+        String newToken = userService.refreshToken(token);
+        assertNotEquals(newToken, token);
+    }
+
+    @Test
+    void invalidRefreshTokenTest() {
+        String token = userService.signIn(new UserSignInDto(testEmail, testPassword));
+
+        User user = userRepository.findByEmail(testEmail).orElseThrow();
+        RefreshToken refreshToken = refreshTokenRepository.findById(user.getId()).orElseThrow();
+        refreshToken.setToken("blablabla");
+        refreshTokenRepository.save(refreshToken);
+
+        Exception exception = assertThrows(InvalidRefreshTokenException.class, () ->
+                userService.refreshToken(token));
+        assertEquals("Invalid refresh token!", exception.getMessage());
+
+        exception = assertThrows(InvalidRefreshTokenException.class, () ->
+                userService.refreshToken(null));
+        assertEquals("Invalid refresh token!", exception.getMessage());
     }
 }

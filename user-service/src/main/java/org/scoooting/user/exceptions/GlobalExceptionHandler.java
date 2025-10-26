@@ -17,6 +17,21 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ErrorResponseDTO> handleInvalidRefreshToken(
+            InvalidRefreshTokenException ex,
+            WebRequest request
+    ) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "INVALID_REFRESH_TOKEN",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleUserNotFound(
             UserNotFoundException ex,
