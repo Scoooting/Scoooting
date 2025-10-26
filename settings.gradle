@@ -1,0 +1,2 @@
+rootProject.name = 'scoooting'
+include 'user-service', 'transport-service', 'rental-service', 'api-gateway', 'eureka', 'config-server'

@@ -15,7 +15,6 @@ import org.scoooting.transport.services.TransportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -23,7 +22,6 @@ import org.springframework.test.context.TestPropertySource;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 import static org.scoooting.transport.TestcontainersConfiguration.*;
 
 @Import(TestcontainersConfiguration.class)
@@ -53,7 +51,7 @@ class TransportServiceApplicationTests {
         registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
         registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
 
-        registry.add("user-service.url", () -> "http://localhost:" + userServiceContainer.getMappedPort(8081));
+        registry.add("user-service.url", () -> "http://localhost:" + userServiceContainer.getMappedPort(8081));;
     }
 
     @BeforeEach

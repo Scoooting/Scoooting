@@ -7,7 +7,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name = "transport-service", path = "/api/transports")
+@FeignClient(name = "transport-service", url = "${transport-service.url:}", path = "/api/transports")
 public interface TransportClient {
 
     @GetMapping("/status/{name}")
