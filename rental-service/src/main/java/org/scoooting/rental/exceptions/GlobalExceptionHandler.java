@@ -17,6 +17,60 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(TransportServiceException.class)
+    public ResponseEntity<ErrorResponseDTO> handleTransportServiceException(
+            TransportServiceException ex,
+            WebRequest request
+    ) {
+        HttpStatus status = ex.getMessage().contains("not found")
+                ? HttpStatus.NOT_FOUND
+                : HttpStatus.SERVICE_UNAVAILABLE;
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "TRANSPORT_SERVICE_ERROR",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(UserServiceException.class)
+    public ResponseEntity<ErrorResponseDTO> handleUserServiceException(
+            UserServiceException ex,
+            WebRequest request
+    ) {
+        HttpStatus status = ex.getMessage().contains("not found")
+                ? HttpStatus.NOT_FOUND
+                : HttpStatus.SERVICE_UNAVAILABLE;
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "USER_SERVICE_ERROR",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponseDTO> handleIllegalState(
+            IllegalStateException ex,
+            WebRequest request
+    ) {
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "ILLEGAL_STATE",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+
     @ExceptionHandler(FeignException.class)
     public ResponseEntity<ErrorResponseDTO> handleFeignException(
             FeignException ex,

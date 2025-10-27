@@ -15,6 +15,8 @@ import org.scoooting.transport.repositories.TransportRepository;
 import org.scoooting.transport.repositories.TransportStatusRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,94 +35,85 @@ public class TransportService {
     private final ResilientUserClient resilientUserClient;
 
     @Transactional(readOnly = true)
-    public List<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
+    public Flux<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
         // Calculate boundaries
         double latRange = radiusKm / 111.0;
         double lngRange = radiusKm / (111.0 * Math.cos(Math.toRadians(lat)));
 
-        List<Transport> transports = transportRepository.findAvailableInArea(
+        return transportRepository.findAvailableInArea(
                 lat - latRange, lat + latRange,
                 lng - lngRange, lng + lngRange
-        );
-
-        return transportMapper.toResponseDTOList(transports);
+        ).flatMap(this::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
-    public List<TransportResponseDTO> findTransportsByType(
+    public Flux<TransportResponseDTO> findTransportsByType(
             TransportType type, Double lat, Double lng, Double radiusKm
     ) {
         double latRange = radiusKm / 111.0;
         double lngRange = radiusKm / (111.0 * Math.cos(Math.toRadians(lat)));
 
-        List<Transport> transports = transportRepository.findAvailableByTypeInArea(
+        return transportRepository.findAvailableByTypeInArea(
                 type, lat - latRange, lat + latRange, lng - lngRange, lng + lngRange
-        );
-
-        return transports.stream().map(this::toResponseDTO).toList();
+        ).flatMap(this::toResponseDTO);
     }
 
     @Transactional(readOnly = true)
-    public TransportResponseDTO getTransportById(Long id) {
-        Transport transport = transportRepository.findById(id)
-                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
-        return toResponseDTO(transport);
+    public Mono<TransportResponseDTO> getTransportById(Long id) {
+        return transportRepository.findById(id)
+                .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
+                .flatMap(this::toResponseDTO);
     }
-
     @Transactional(readOnly = true)
-    public List<TransportResponseDTO> findAvailableTransportsByType(TransportType type) {
-        List<Transport> transports = transportRepository.findAvailableByType(type);
-        return transports.stream().map(this::toResponseDTO).toList();
+    public Flux<TransportResponseDTO> findAvailableTransportsByType(TransportType type) {
+        return transportRepository.findAvailableByType(type)
+                .flatMap(this::toResponseDTO);
     }
 
-    @Transactional(readOnly = true)
-    public Map<String, Long> getAvailabilityStats() {
-        Map<String, Long> stats = new HashMap<>();
-
-        for (TransportType type : TransportType.values()) {
-            long count = transportRepository.countAvailableByType(type);
-            stats.put(type.name(), count);
-        }
-
-        return stats;
+    public Mono<Map<String, Long>> getAvailabilityStats() {
+        return Flux.fromArray(TransportType.values())
+                .flatMap(type -> transportRepository.countAvailableByType(type)
+                        .map(count -> Map.entry(type.name(), count)))
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
-    public TransportResponseDTO updateTransportStatus(Long transportId, String statusName) {
-        Transport transport = transportRepository.findById(transportId)
-                .orElseThrow(() -> new TransportNotFoundException("Transport not found"));
+    public Mono<TransportResponseDTO> updateTransportStatus(Long transportId, String statusName) {
 
-        TransportStatus status = statusRepository.findByName(statusName)
-                .orElseThrow(() -> new DataNotFoundException("Status not found"));
-
-        transport.setStatusId(status.getId());
-        transport = transportRepository.save(transport);
-
-        return toResponseDTO(transport);
+        return transportRepository.findById(transportId)
+            .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
+            .flatMap(transport -> statusRepository.findByName(statusName)
+            .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")))
+            .flatMap(status -> {
+                transport.setStatusId(status.getId());
+                return transportRepository.save(transport);
+            }))
+            .flatMap(this::toResponseDTO);
     }
 
-    public Long getStatusId(String name) {
-        Optional<TransportStatus> optionalTransportStatus = statusRepository.findByName(name);
-        if (optionalTransportStatus.isPresent())
-            return optionalTransportStatus.get().getId();
-
-        throw new DataNotFoundException("Status not found");
+    public Mono<Long> getStatusId(String name) {
+        return statusRepository.findByName(name)
+            .map(TransportStatus::getId)
+            .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")));
     }
 
-    public void updateCoordinates(UpdateCoordinatesDTO updateCoordinatesDTO) {
-        Transport transport = transportRepository.findById(updateCoordinatesDTO.transportId()).orElseThrow();
-        transport.setLatitude(updateCoordinatesDTO.latitude());
-        transport.setLongitude(updateCoordinatesDTO.longitude());
-
-        transportRepository.save(transport);
+    public Mono<Void> updateCoordinates(UpdateCoordinatesDTO dto) {
+        return transportRepository.findById(dto.transportId())
+            .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
+            .flatMap(transport -> {
+                transport.setLatitude(dto.latitude());
+                transport.setLongitude(dto.longitude());
+                return transportRepository.save(transport);
+            })
+            .then();
     }
 
-    public TransportResponseDTO toResponseDTO(Transport transport) {
-        String statusName = statusRepository.findById(transport.getStatusId())
+    public Mono<TransportResponseDTO> toResponseDTO(Transport transport) {
+        return statusRepository.findById(transport.getStatusId())
                 .map(TransportStatus::getName)
-                .orElse("UNKNOWN");
-
-        String cityName = resilientUserClient.getCityName(transport.getCityId());
-
-        return transportMapper.toResponseDTO(transport, statusName, cityName);
+                .defaultIfEmpty("UNKNOWN")
+                .flatMap(statusName ->
+                    resilientUserClient.getCityName(transport.getCityId())
+                    .map(cityName -> transportMapper.toResponseDTO(transport, statusName, cityName))
+                );
     }
 }

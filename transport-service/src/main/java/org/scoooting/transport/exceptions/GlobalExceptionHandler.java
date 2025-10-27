@@ -1,6 +1,5 @@
 package org.scoooting.transport.exceptions;
 
-import feign.FeignException;
 import org.scoooting.transport.dto.common.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

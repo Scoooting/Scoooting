@@ -8,11 +8,12 @@ import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.enums.TransportType;
 import org.scoooting.transport.services.TransportService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,81 +28,74 @@ public class TransportController {
      * Get all available transports within specified radius
      */
     @GetMapping("/nearest")
-    public ResponseEntity<List<TransportResponseDTO>> findNearestTransports(
+    public Flux<TransportResponseDTO> findNearestTransports(
             @RequestParam @DecimalMin("-90") @DecimalMax("90") Double lat,
             @RequestParam @DecimalMin("-180") @DecimalMax("180") Double lng,
             @RequestParam(defaultValue = "2.0") @DecimalMin("0.1") @DecimalMax("50") Double radiusKm
     ) {
-        List<TransportResponseDTO> transports = transportService.findNearestTransports(lat, lng, radiusKm);
-        return ResponseEntity.ok(transports);
+        return transportService.findNearestTransports(lat, lng, radiusKm);
     }
 
     /**
      * Get the nearest transports by specific type
      */
     @GetMapping("/nearest/{type}")
-    public ResponseEntity<List<TransportResponseDTO>> findNearestTransportsByType(
+    public Flux<TransportResponseDTO> findNearestTransportsByType(
             @PathVariable TransportType type,
             @RequestParam @DecimalMin("-90") @DecimalMax("90") Double lat,
             @RequestParam @DecimalMin("-180") @DecimalMax("180") Double lng,
             @RequestParam(defaultValue = "2.0") @DecimalMin("0.1") @DecimalMax("50") Double radiusKm
     ) {
-        List<TransportResponseDTO> transports = transportService.findTransportsByType(type, lat, lng, radiusKm);
-        return ResponseEntity.ok(transports);
+        return transportService.findTransportsByType(type, lat, lng, radiusKm);
     }
 
     /**
      * Get transport status id
      */
     @GetMapping("/status/{name}")
-    public ResponseEntity<Long> getTransportStatusId(@PathVariable String name) {
-        return ResponseEntity.ok(transportService.getStatusId(name));
+    public Mono<Long> getTransportStatusId(@PathVariable String name) {
+        return transportService.getStatusId(name);
     }
 
     /**
      * Get specific transport details
      */
     @GetMapping("/{id}")
-    public ResponseEntity<TransportResponseDTO> getTransport(@PathVariable Long id) {
-        TransportResponseDTO transport = transportService.getTransportById(id);
-        return ResponseEntity.ok(transport);
+    public Mono<TransportResponseDTO> getTransport(@PathVariable Long id) {
+        return transportService.getTransportById(id);
     }
 
     /**
      * Get all available transports by type
      */
     @GetMapping("/available/{type}")
-    public ResponseEntity<List<TransportResponseDTO>> findAvailableTransportsByType(
+    public Flux<TransportResponseDTO> findAvailableTransportsByType(
             @PathVariable TransportType type
     ) {
-        List<TransportResponseDTO> transports = transportService.findAvailableTransportsByType(type);
-        return ResponseEntity.ok(transports);
+        return transportService.findAvailableTransportsByType(type);
     }
 
     /**
      * Get availability statistics for all transport types
      */
     @GetMapping("/stats/availability")
-    public ResponseEntity<Map<String, Long>> getAvailabilityStats() {
-        Map<String, Long> stats = transportService.getAvailabilityStats();
-        return ResponseEntity.ok(stats);
-    }
+    public Mono<Map<String, Long>> getAvailabilityStats() {
+        return transportService.getAvailabilityStats();    }
 
     /**
      * Update transport status (ADMIN only)
      */
     @PutMapping("/{id}/status")
-    public ResponseEntity<TransportResponseDTO> updateTransportStatus(
+    public Mono<TransportResponseDTO> updateTransportStatus(
             @PathVariable Long id,
             @RequestParam String status
     ) {
-        TransportResponseDTO transport = transportService.updateTransportStatus(id, status);
-        return ResponseEntity.ok(transport);
+        return transportService.updateTransportStatus(id, status);
     }
 
     @PutMapping("/update-coordinates")
-    public ResponseEntity<Void> updateTransportCoordinates(@Valid @RequestBody UpdateCoordinatesDTO updateCoordinatesDTO) {
-        transportService.updateCoordinates(updateCoordinatesDTO);
-        return ResponseEntity.ok().build();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> updateCoordinates(@Valid @RequestBody UpdateCoordinatesDTO dto) {
+        return transportService.updateCoordinates(dto);
     }
 }

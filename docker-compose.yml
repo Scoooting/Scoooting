@@ -89,7 +89,10 @@ services:
     container_name: transport-service
     environment:
       - POSTGRES_URL=jdbc:postgresql://db:5432/transports_db
+      - R2DBC_URL=r2dbc:postgresql://db:5432/transports_db
       - CONFIG_SERVER_URI=${CONFIG_SERVER_URI}
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=transports_db
     ports: []
     depends_on:
       db-init:
