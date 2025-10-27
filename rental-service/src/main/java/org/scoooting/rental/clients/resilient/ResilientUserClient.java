@@ -25,6 +25,7 @@ public class ResilientUserClient {
         try {
             return userServiceApi.getUserById(id);
         } catch (FeignException.NotFound e) {
+            e.printStackTrace();
             throw new UserServiceException("User with ID " + id + " not found");
         }
     }

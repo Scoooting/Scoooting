@@ -15,15 +15,15 @@ import org.scoooting.transport.services.TransportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import reactor.test.StepVerifier;
+
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 import static org.scoooting.transport.TestcontainersConfiguration.*;
 
 @Import(TestcontainersConfiguration.class)
@@ -49,16 +49,18 @@ class TransportServiceApplicationTests {
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
-        registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
+        System.out.println(postgreSQLContainer.getJdbcUrl());
+        registry.add("spring.r2dbc.url", () ->
+                "r2dbc:postgresql://localhost:" + postgreSQLContainer.getMappedPort(5432) + "/transports_db");
+        registry.add("spring.r2dbc.username", postgreSQLContainer::getUsername);
+        registry.add("spring.r2dbc.password", postgreSQLContainer::getPassword);
 
-        registry.add("user-service.url", () -> "http://localhost:" + userServiceContainer.getMappedPort(8081));
+        registry.add("user-service.url", () -> "http://localhost:" + userServiceContainer.getMappedPort(8081));;
     }
 
     @BeforeEach
     void beforeEach() {
-        transportRepository.deleteAll();
+        transportRepository.deleteAll().block();
         for (TransportType type : TransportType.values()) {
             Transport transport = Transport.builder()
                     .transportType(type)
@@ -69,92 +71,122 @@ class TransportServiceApplicationTests {
                     .build();
             transports.add(transport);
         }
-        transportRepository.saveAll(transports);
+        transportRepository.saveAll(transports)
+                .doOnTerminate(() -> System.out.println("All transports saved!"))
+                .blockLast();
     }
 
     @Test
     void findNearestTransportTest() {
-        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findNearestTransports(lat, lon, radius);
-        assertEquals(4, transports.size());
+        StepVerifier.create(transportService.findNearestTransports(lat, lon, radius))
+                .expectNextCount(4)
+                .verifyComplete();
     }
 
     @Test
     void findNearestTransportEmptyTest() {
-        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findNearestTransports(90.0, 90.0, radius);
-        assertEquals(0, transports.size());
+        StepVerifier.create(transportService.findNearestTransports(90.0, 90.0, radius))
+                .expectNextCount(0)
+                .verifyComplete();
     }
 
     @ParameterizedTest
     @EnumSource(TransportType.class)
     void findNearestTransportByTypeTest(TransportType type) {
-        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findTransportsByType(type, lat, lon, radius);
-        assertEquals(type.toString(), transports.get(0).type());
-        assertEquals(1, transports.size());
+        StepVerifier.create(transportService.findTransportsByType(type, lat, lon, radius).collectList())
+                .assertNext(t -> {
+                    assertEquals(1, t.size());
+                    assertEquals(type.toString(), t.get(0).type());
+                })
+                .verifyComplete();
     }
 
     @Test
     void getTransportByIdTest() {
         for (Transport transport : transports) {
-            TransportResponseDTO transportDto = transportService.getTransportById(transport.getId()).block();
-            assertEquals(transport.getId(), transportDto.id());
+            StepVerifier.create(transportService.getTransportById(transport.getId()))
+                    .assertNext(t -> assertEquals(transport.getId(), t.id()))
+                    .verifyComplete();
         }
     }
 
     @Test
     void getTransportByIdNotFoundTest() {
-        Exception exception = assertThrows(TransportNotFoundException.class,
-                () -> transportService.getTransportById(-1L));
-        assertEquals("Transport not found", exception.getMessage());
+        StepVerifier.create(transportService.getTransportById(-1L))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof TransportNotFoundException &&
+                        throwable.getMessage().equals("Transport not found")
+                )
+                .verify();
     }
 
     @ParameterizedTest
     @EnumSource(TransportType.class)
     void findAvailableTransportsByTypeTest(TransportType type) {
-        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findAvailableTransportsByType(type);
-        assertEquals(1, transports.size());
+        StepVerifier.create(transportService.findAvailableTransportsByType(type))
+                .expectNextCount(1)
+                .verifyComplete();
     }
 
     @Test
     void getAvailabilityStatsTest() {
-        Map<String, Long> stats = transportService.getAvailabilityStats().block();
-        for (TransportType type : TransportType.values())
-            assertEquals(1, stats.get(type.toString()));
+        StepVerifier.create(transportService.getAvailabilityStats())
+                .assertNext(stats -> {
+                    for (TransportType type : TransportType.values()) {
+                        assertEquals(1, stats.get(type.toString()));
+                    }
+                })
+                .verifyComplete();
     }
 
     @Test
     void updateTransportStatusTest() {
         Transport transport = transports.get(0);
-        TransportResponseDTO transportDto = transportService.updateTransportStatus(transport.getId(), "IN_USE").block();
-        assertEquals(transportDto.status(), "IN_USE");
+        StepVerifier.create(transportService.updateTransportStatus(transport.getId(), "IN_USE"))
+                .assertNext(transportDto -> assertEquals(transportDto.status(), "IN_USE"))
+                .verifyComplete();
     }
 
     @Test
     void updateTransportStatusExceptionsTest() {
-        Exception exception = assertThrows(TransportNotFoundException.class,
-                () -> transportService.updateTransportStatus(-1L, "IN_USE"));
-        assertEquals("Transport not found", exception.getMessage());
+        StepVerifier.create(transportService.updateTransportStatus(-1L, "IN_USE"))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof TransportNotFoundException &&
+                        throwable.getMessage().equals("Transport not found")
+                )
+                .verify();
 
-        exception = assertThrows(DataNotFoundException.class,
-                () -> transportService.updateTransportStatus(transports.get(0).getId(), "HAHA"));
-        assertEquals("Status not found", exception.getMessage());
+        StepVerifier.create(transportService.updateTransportStatus(transports.get(0).getId(), "HAHA"))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof DataNotFoundException &&
+                                throwable.getMessage().equals("Status not found")
+                )
+                .verify();
     }
 
     @Test
     void getStatusIdTest() {
-        Long statusId = transportService.getStatusId("IN_USE").block();
-        assertEquals(2, statusId);
+        StepVerifier.create(transportService.getStatusId("IN_USE"))
+                .assertNext(statusId -> assertEquals(2, statusId))
+                .verifyComplete();
 
-        Exception exception = assertThrows(DataNotFoundException.class,
-                () -> transportService.getStatusId("HAHA"));
-        assertEquals("Status not found", exception.getMessage());
+        StepVerifier.create(transportService.getStatusId("HAHA"))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof DataNotFoundException &&
+                        throwable.getMessage().equals("Status not found")
+                )
+                .verify();
     }
 
     @Test
     void updateCoordinatesTest() {
         Transport transport = transports.get(0);
-        transportService.updateCoordinates(new UpdateCoordinatesDTO(transport.getId(), 40.0, 50.0));
-        Transport updatedTransport = transportRepository.findById(transport.getId()).block();
-        assertEquals(40.0, updatedTransport.getLatitude());
-        assertEquals(50.0, updatedTransport.getLongitude());
+        transportService.updateCoordinates(new UpdateCoordinatesDTO(transport.getId(), 40.0, 50.0)).block();
+        StepVerifier.create(transportRepository.findById(transport.getId()))
+                .assertNext(updatedTransport -> {
+                    assertEquals(40.0, updatedTransport.getLatitude());
+                    assertEquals(50.0, updatedTransport.getLongitude());
+                })
+                .verifyComplete();
     }
 }

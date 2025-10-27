@@ -76,6 +76,7 @@ class TestcontainersConfiguration {
                 .withExposedPorts(8888)
                 .withEnv("CONFIG_USERNAME", envVars.get("CONFIG_USERNAME"))
                 .withEnv("CONFIG_TOKEN", envVars.get("CONFIG_TOKEN"))
+
                 .waitingFor(Wait.forHttp("/actuator/health").forPort(8888));
 
     @Container

@@ -34,9 +34,11 @@ public class AuthController {
     }
 
     @GetMapping("/refreshToken")
-    public ResponseEntity<?> refresh(HttpServletRequest request)
-            throws UserNotFoundException, InvalidRefreshTokenException {
+    public ResponseEntity<?> refresh(HttpServletRequest request) {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader == null)
+            throw new InvalidRefreshTokenException("Invalid refresh token!");
+
         return ResponseEntity.ok(userService.refreshToken(authHeader.substring(7)));
     }
 

@@ -3,6 +3,7 @@ package org.scoooting.user.config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.scoooting.user.dto.JwtDto;
@@ -61,7 +62,7 @@ public class JwtService {
                     .build()
                     .parseSignedClaims(token);
             return true;
-        } catch (ExpiredJwtException ignored) {}
+        } catch (ExpiredJwtException | MalformedJwtException ignored) {}
 
         return false;
     }
