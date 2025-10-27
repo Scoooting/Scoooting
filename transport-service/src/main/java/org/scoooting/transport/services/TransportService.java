@@ -77,18 +77,18 @@ public class TransportService {
                 .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
-    public Mono<TransportResponseDTO> updateTransportStatus(Long transportId, String statusName) {
+        public Mono<TransportResponseDTO> updateTransportStatus(Long transportId, String statusName) {
 
-        return transportRepository.findById(transportId)
-            .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
-            .flatMap(transport -> statusRepository.findByName(statusName)
-            .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")))
-            .flatMap(status -> {
-                transport.setStatusId(status.getId());
-                return transportRepository.save(transport);
-            }))
-            .flatMap(this::toResponseDTO);
-    }
+            return transportRepository.findById(transportId)
+                .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
+                .flatMap(transport -> statusRepository.findByName(statusName)
+                .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")))
+                .flatMap(status -> {
+                    transport.setStatusId(status.getId());
+                    return transportRepository.save(transport);
+                }))
+                .flatMap(this::toResponseDTO);
+        }
 
     public Mono<Long> getStatusId(String name) {
         return statusRepository.findByName(name)
