@@ -4,9 +4,8 @@ server:
 spring:
   application:
     name: user-service
-
   config:
     import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}
   cloud:
     config:
-      fail-fast: true
+      fail-fast: false
