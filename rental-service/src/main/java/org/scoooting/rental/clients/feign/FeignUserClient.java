@@ -1,4 +1,4 @@
-package org.scoooting.rental.clients;
+package org.scoooting.rental.clients.feign;
 
 import jakarta.validation.Valid;
 import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(name = "user-service", path = "/api/users")
-public interface UserClient {
+public interface FeignUserClient {
 
     @GetMapping("/user/{id}")
     ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id);

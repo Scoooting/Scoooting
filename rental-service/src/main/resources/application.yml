@@ -10,3 +10,40 @@ spring:
   cloud:
     config:
       fail-fast: true
+
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      registerHealthIndicator: true
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 3
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10s
+      permittedNumberOfCallsInHalfOpenState: 2
+      automaticTransitionFromOpenToHalfOpenEnabled: true
+      slidingWindowType: COUNT_BASED
+      recordExceptions:
+        - feign.FeignException
+        - java.io.IOException
+        - java.util.concurrent.TimeoutException
+        - java.net.SocketException
+        - java.net.ConnectException
+
+  instances:
+    userService:
+      baseConfig: default
+
+    transportService:
+      baseConfig: default
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always

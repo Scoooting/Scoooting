@@ -4,12 +4,36 @@ server:
 spring:
   application:
     name: transport-service
-
   config:
-    import: configserver:${CONFIG_SERVER_URI:http://config-server:8888}
+    import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}
   cloud:
     config:
       fail-fast: true
+    loadbalancer:
+      ribbon:
+        enabled: false
+
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://db:5432/transports_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres_pass}
+    pool:
+      initial-size: 10
+      max-size: 50
+
+  sql:
+    init:
+      mode: always
+      platform: postgresql
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      continue-on-error: false
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${POSTGRES_URL:jdbc:postgresql://db:5432/transports_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:postgres_pass}
 
 resilience4j.circuitbreaker:
   instances:
@@ -23,7 +47,8 @@ resilience4j.circuitbreaker:
       automaticTransitionFromOpenToHalfOpenEnabled: true
       slidingWindowType: COUNT_BASED
       recordExceptions:
-        - feign.FeignException
+        - org.springframework.web.reactive.function.client.WebClientRequestException
+        - org.springframework.web.reactive.function.client.WebClientResponseException
         - java.io.IOException
         - java.util.concurrent.TimeoutException
       ignoreExceptions:

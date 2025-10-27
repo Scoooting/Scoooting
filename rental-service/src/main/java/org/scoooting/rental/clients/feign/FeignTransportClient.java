@@ -1,6 +1,5 @@
-package org.scoooting.rental.clients;
+package org.scoooting.rental.clients.feign;
 
-import jakarta.validation.Valid;
 import org.scoooting.rental.dto.UpdateCoordinatesDTO;
 import org.scoooting.rental.dto.response.TransportResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -8,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "transport-service", path = "/api/transports")
-public interface TransportClient {
+public interface FeignTransportClient {
 
     @GetMapping("/status/{name}")
     ResponseEntity<Long> getTransportStatusId(@PathVariable String name);

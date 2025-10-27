@@ -74,20 +74,20 @@ class TransportServiceApplicationTests {
 
     @Test
     void findNearestTransportTest() {
-        List<TransportResponseDTO> transports = transportService.findNearestTransports(lat, lon, radius);
+        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findNearestTransports(lat, lon, radius);
         assertEquals(4, transports.size());
     }
 
     @Test
     void findNearestTransportEmptyTest() {
-        List<TransportResponseDTO> transports = transportService.findNearestTransports(90.0, 90.0, radius);
+        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findNearestTransports(90.0, 90.0, radius);
         assertEquals(0, transports.size());
     }
 
     @ParameterizedTest
     @EnumSource(TransportType.class)
     void findNearestTransportByTypeTest(TransportType type) {
-        List<TransportResponseDTO> transports = transportService.findTransportsByType(type, lat, lon, radius);
+        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findTransportsByType(type, lat, lon, radius);
         assertEquals(type.toString(), transports.get(0).type());
         assertEquals(1, transports.size());
     }
@@ -95,7 +95,7 @@ class TransportServiceApplicationTests {
     @Test
     void getTransportByIdTest() {
         for (Transport transport : transports) {
-            TransportResponseDTO transportDto = transportService.getTransportById(transport.getId());
+            TransportResponseDTO transportDto = transportService.getTransportById(transport.getId()).block();
             assertEquals(transport.getId(), transportDto.id());
         }
     }
@@ -110,13 +110,13 @@ class TransportServiceApplicationTests {
     @ParameterizedTest
     @EnumSource(TransportType.class)
     void findAvailableTransportsByTypeTest(TransportType type) {
-        List<TransportResponseDTO> transports = transportService.findAvailableTransportsByType(type);
+        List<TransportResponseDTO> transports = (List<TransportResponseDTO>) transportService.findAvailableTransportsByType(type);
         assertEquals(1, transports.size());
     }
 
     @Test
     void getAvailabilityStatsTest() {
-        Map<String, Long> stats = transportService.getAvailabilityStats();
+        Map<String, Long> stats = transportService.getAvailabilityStats().block();
         for (TransportType type : TransportType.values())
             assertEquals(1, stats.get(type.toString()));
     }
@@ -124,7 +124,7 @@ class TransportServiceApplicationTests {
     @Test
     void updateTransportStatusTest() {
         Transport transport = transports.get(0);
-        TransportResponseDTO transportDto = transportService.updateTransportStatus(transport.getId(), "IN_USE");
+        TransportResponseDTO transportDto = transportService.updateTransportStatus(transport.getId(), "IN_USE").block();
         assertEquals(transportDto.status(), "IN_USE");
     }
 
@@ -141,7 +141,7 @@ class TransportServiceApplicationTests {
 
     @Test
     void getStatusIdTest() {
-        Long statusId = transportService.getStatusId("IN_USE");
+        Long statusId = transportService.getStatusId("IN_USE").block();
         assertEquals(2, statusId);
 
         Exception exception = assertThrows(DataNotFoundException.class,
@@ -153,7 +153,7 @@ class TransportServiceApplicationTests {
     void updateCoordinatesTest() {
         Transport transport = transports.get(0);
         transportService.updateCoordinates(new UpdateCoordinatesDTO(transport.getId(), 40.0, 50.0));
-        Transport updatedTransport = transportRepository.findById(transport.getId()).orElseThrow();
+        Transport updatedTransport = transportRepository.findById(transport.getId()).block();
         assertEquals(40.0, updatedTransport.getLatitude());
         assertEquals(50.0, updatedTransport.getLongitude());
     }

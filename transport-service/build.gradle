@@ -24,24 +24,29 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer:4.3.0'
+
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:4.3.0'
     implementation 'org.springframework.cloud:spring-cloud-starter-config:4.3.0'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign:4.3.0'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.12'
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.12'
     implementation 'org.mapstruct:mapstruct:1.6.3'
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-database-postgresql'
 
     // Circuit Breaker
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-reactor:2.2.0'
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql'
+
+    implementation 'org.springframework:spring-jdbc'
+    implementation 'org.postgresql:postgresql'
+
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.postgresql:postgresql'
+
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

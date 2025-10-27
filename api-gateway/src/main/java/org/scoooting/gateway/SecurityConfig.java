@@ -26,6 +26,8 @@ public class SecurityConfig {
                         .pathMatchers("/user-service/api/auth/**").permitAll()
                         .pathMatchers("/*/swagger-ui/**", "/*/v3/api-docs/**").permitAll()
                         .pathMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        .pathMatchers("/*/actuator/**").permitAll() // Circuit Breaker
+                        .pathMatchers("/actuator/**").permitAll()
                         .anyExchange().authenticated()
                 ).addFilterBefore(jwtFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .build();

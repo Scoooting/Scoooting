@@ -1,8 +1,8 @@
 package org.scoooting.rental.services;
 
 import lombok.RequiredArgsConstructor;
-import org.scoooting.rental.clients.TransportClient;
-import org.scoooting.rental.clients.UserClient;
+import org.scoooting.rental.clients.resilient.ResilientTransportService;
+import org.scoooting.rental.clients.resilient.ResilientUserClient;
 import org.scoooting.rental.dto.common.PageResponseDTO;
 import org.scoooting.rental.dto.UpdateCoordinatesDTO;
 import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
@@ -17,6 +17,8 @@ import org.scoooting.rental.repositories.RentalRepository;
 import org.scoooting.rental.repositories.RentalStatusRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -25,22 +27,32 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class RentalService {
 
     private final RentalRepository rentalRepository;
-    private final TransportClient transportClient;
-    private final UserClient userClient;
+    private final ResilientTransportService transportClient;
+    private final ResilientUserClient feignUserClient;
     private final RentalStatusRepository rentalStatusRepository;
     private final RentalMapper rentalMapper;
 
-    private static final BigDecimal BASE_RATE = new BigDecimal("0.50"); // 50 cents per minute
-    private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00"); // $1 unlock fee
+    private static final BigDecimal BASE_RATE = new BigDecimal("0.50");
+    private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00");
+
+    public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng) {
+        return Mono.fromCallable(() ->
+                startRentalBlocking(userId, transportId, startLat, startLng))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
 
     @Transactional
-    public RentalResponseDTO startRental(Long userId, Long transportId, Double startLat, Double startLng) {
+    protected RentalResponseDTO startRentalBlocking(Long userId, Long transportId, Double startLat, Double startLng) {
+        // Check if we have active rental
+        if (rentalRepository.findActiveRentalByUserId(userId).isPresent()) {
+            throw new IllegalStateException("User already has an active rental");
+        }
+
         // Validate user exists
-        userClient.getUserById(userId);
+        feignUserClient.getUserById(userId);
 
         // Validate transport
         transportClient.getTransport(transportId);
@@ -63,18 +75,33 @@ public class RentalService {
         return rentalMapper.toResponseDTO(rental);
     }
 
+    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng) {
+        return Mono.fromCallable(() -> endRentalBlocking(userId, endLat, endLng))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
     @Transactional
-    public RentalResponseDTO endRental(Long userId, Double endLat, Double endLng) {
+    protected RentalResponseDTO endRentalBlocking(Long userId, Double endLat, Double endLng) {
         // Find active rental
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));
+
+        if (rental == null) {
+            // Check if it's already completed
+            List<Rental> recentRentals = rentalRepository.findRentalHistoryByUserId(userId, 0, 1);
+            if (!recentRentals.isEmpty() && recentRentals.get(0).getEndTime() != null) {
+                throw new IllegalStateException("Your last rental was already completed at " +
+                        recentRentals.get(0).getEndTime());
+            }
+            throw new IllegalStateException("No active rental found for user");
+        }
 
         // Calculate duration and cost
         LocalDateTime endTime = LocalDateTime.now();
         long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
         BigDecimal totalCost = UNLOCK_FEE.add(BASE_RATE.multiply(BigDecimal.valueOf(minutes)));
 
-        // Calculate distance (simple Euclidean distance)
+        // Calculate distance
         double distance = calculateDistance(
                 rental.getStartLatitude(), rental.getStartLongitude(),
                 endLat, endLng
@@ -101,17 +128,28 @@ public class RentalService {
         transportClient.updateTransportCoordinates(new UpdateCoordinatesDTO(transport.id(), endLat, endLng));
 
         // Award bonus points
-        UserResponseDTO user = userClient.getUserById(userId).getBody();
-        userClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
+        UserResponseDTO user = feignUserClient.getUserById(userId).getBody();
+        feignUserClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
                 user.bonuses() + (int) minutes));
 
         return rentalMapper.toResponseDTO(rental);
     }
 
+    public Mono<Void> cancelRental(Long userId) {
+        return Mono.fromRunnable(() -> cancelRentalBlocking(userId))
+                .subscribeOn(Schedulers.boundedElastic())
+                .then();
+    }
+
     @Transactional
-    public void cancelRental(Long userId) {
+    protected void cancelRentalBlocking(Long userId) {
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found"));
+
+        // Check if rental has been already cancelled before
+        if (rental.getEndTime() != null) {
+            throw new IllegalStateException("Rental already ended or cancelled");
+        }
 
         // Set CANCELLED status
         RentalStatus cancelledStatus = rentalStatusRepository.findByName("CANCELLED")
@@ -125,13 +163,23 @@ public class RentalService {
         transportClient.updateTransportStatus(transport.id(), "AVAILABLE");
     }
 
-    @Transactional(readOnly = true)
-    public RentalResponseDTO getActiveRental(Long userId) {
-        return rentalMapper.toResponseDTO(rentalRepository.findActiveRentalByUserId(userId).orElseThrow());
+    public Mono<RentalResponseDTO> getActiveRental(Long userId) {
+        return Mono.fromCallable(() ->
+                        rentalRepository.findActiveRentalByUserId(userId)
+                                .map(rentalMapper::toResponseDTO)
+                ).subscribeOn(Schedulers.boundedElastic())
+                .flatMap(optional
+                        -> optional.map(Mono::just).orElseGet(()
+                        -> Mono.error(new DataNotFoundException("No active rental found for user"))
+                ));
+    }
+    public Mono<PageResponseDTO<RentalResponseDTO>> getUserRentalHistory(Long userId, int page, int size) {
+        return Mono.fromCallable(() -> getUserRentalHistoryBlocking(userId, page, size))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Transactional(readOnly = true)
-    public PageResponseDTO<RentalResponseDTO> getUserRentalHistory(Long userId, int page, int size) {
+    protected PageResponseDTO<RentalResponseDTO> getUserRentalHistoryBlocking(Long userId, int page, int size) {
         int offset = page * size;
         List<Rental> rentals = rentalRepository.findRentalHistoryByUserId(userId, offset, size);
         long total = rentalRepository.countRentalsByUserId(userId);
@@ -147,8 +195,7 @@ public class RentalService {
             return 0.0;
         }
 
-        // Simple Euclidean distance in km (rough approximation)
-        double latDiff = Math.abs(lat1 - lat2) * 111.0; // 1 degree ≈ 111 km
+        double latDiff = Math.abs(lat1 - lat2) * 111.0;
         double lngDiff = Math.abs(lng1 - lng2) * 111.0 * Math.cos(Math.toRadians(lat1));
         return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
     }

@@ -22,6 +22,10 @@ public interface TransportMapper {
             String cityName
     );
 
+    @Mapping(target = "status", constant = "UNKNOWN")
+    @Mapping(target = "cityName", constant = "N/A")
+    TransportResponseDTO toResponseDTOSimple(Transport transport);
+
     // Request DTO -> Entity
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "transportType", source = "type")
