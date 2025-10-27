@@ -1,8 +1,10 @@
 package org.scoooting.rental.services;
 
 import lombok.RequiredArgsConstructor;
-import org.scoooting.rental.clients.TransportClient;
-import org.scoooting.rental.clients.UserClient;
+import org.scoooting.rental.clients.feign.FeignTransportClient;
+import org.scoooting.rental.clients.feign.FeignUserClient;
+import org.scoooting.rental.clients.resilient.ResilientTransportService;
+import org.scoooting.rental.clients.resilient.ResilientUserClient;
 import org.scoooting.rental.dto.common.PageResponseDTO;
 import org.scoooting.rental.dto.UpdateCoordinatesDTO;
 import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
@@ -29,8 +31,8 @@ import java.util.List;
 public class RentalService {
 
     private final RentalRepository rentalRepository;
-    private final TransportClient transportClient;
-    private final UserClient userClient;
+    private final ResilientTransportService transportClient;
+    private final ResilientUserClient feignUserClient;
     private final RentalStatusRepository rentalStatusRepository;
     private final RentalMapper rentalMapper;
 
@@ -39,8 +41,13 @@ public class RentalService {
 
     @Transactional
     public RentalResponseDTO startRental(Long userId, Long transportId, Double startLat, Double startLng) {
+        // Check if we have active rental
+        if (rentalRepository.findActiveRentalByUserId(userId).isPresent()) {
+            throw new IllegalStateException("User already has an active rental");
+        }
+
         // Validate user exists
-        userClient.getUserById(userId);
+        feignUserClient.getUserById(userId);
 
         // Validate transport
         transportClient.getTransport(transportId);
@@ -68,6 +75,11 @@ public class RentalService {
         // Find active rental
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));
+
+        // Check if rental has already been finished
+        if (rental.getEndTime() != null) {
+            throw new IllegalStateException("Rental already ended");
+        }
 
         // Calculate duration and cost
         LocalDateTime endTime = LocalDateTime.now();
@@ -101,8 +113,8 @@ public class RentalService {
         transportClient.updateTransportCoordinates(new UpdateCoordinatesDTO(transport.id(), endLat, endLng));
 
         // Award bonus points
-        UserResponseDTO user = userClient.getUserById(userId).getBody();
-        userClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
+        UserResponseDTO user = feignUserClient.getUserById(userId).getBody();
+        feignUserClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
                 user.bonuses() + (int) minutes));
 
         return rentalMapper.toResponseDTO(rental);
@@ -112,6 +124,11 @@ public class RentalService {
     public void cancelRental(Long userId) {
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found"));
+
+        // Check if rental has been already cancelled before
+        if (rental.getEndTime() != null) {
+            throw new IllegalStateException("Rental already ended or cancelled");
+        }
 
         // Set CANCELLED status
         RentalStatus cancelledStatus = rentalStatusRepository.findByName("CANCELLED")

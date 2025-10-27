@@ -1,22 +1,16 @@
 package org.scoooting.rental;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.scoooting.rental.clients.TransportClient;
-import org.scoooting.rental.clients.UserClient;
-import org.scoooting.rental.dto.response.TransportResponseDTO;
-import org.scoooting.rental.dto.response.UserResponseDTO;
+import org.scoooting.rental.clients.feign.FeignTransportClient;
+import org.scoooting.rental.clients.feign.FeignUserClient;
 import org.scoooting.rental.repositories.RentalRepository;
 import org.scoooting.rental.services.RentalService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-
-import static org.mockito.Mockito.when;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -33,10 +27,10 @@ class RentalServiceApplicationTests {
     private RentalRepository rentalRepository;
 
     @MockitoBean
-    private UserClient userClient;
+    private FeignUserClient feignUserClient;
 
     @MockitoBean
-    private TransportClient transportClient;
+    private FeignTransportClient transportClient;
 
     @BeforeEach
     void beforeEach() {
