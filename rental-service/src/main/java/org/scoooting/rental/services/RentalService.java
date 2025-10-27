@@ -39,10 +39,9 @@ public class RentalService {
     private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00");
 
     public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng) {
-        return Mono.fromCallable(() -> {
-            // Все блокирующие операции выполняются здесь
-            return startRentalBlocking(userId, transportId, startLat, startLng);
-        }).subscribeOn(Schedulers.boundedElastic());
+        return Mono.fromCallable(() ->
+                startRentalBlocking(userId, transportId, startLat, startLng))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Transactional
@@ -166,10 +165,14 @@ public class RentalService {
 
     public Mono<RentalResponseDTO> getActiveRental(Long userId) {
         return Mono.fromCallable(() ->
-                rentalMapper.toResponseDTO(rentalRepository.findActiveRentalByUserId(userId).orElseThrow())
-        ).subscribeOn(Schedulers.boundedElastic());
+                        rentalRepository.findActiveRentalByUserId(userId)
+                                .map(rentalMapper::toResponseDTO)
+                ).subscribeOn(Schedulers.boundedElastic())
+                .flatMap(optional
+                        -> optional.map(Mono::just).orElseGet(()
+                        -> Mono.error(new DataNotFoundException("No active rental found for user"))
+                ));
     }
-
     public Mono<PageResponseDTO<RentalResponseDTO>> getUserRentalHistory(Long userId, int page, int size) {
         return Mono.fromCallable(() -> getUserRentalHistoryBlocking(userId, page, size))
                 .subscribeOn(Schedulers.boundedElastic());
