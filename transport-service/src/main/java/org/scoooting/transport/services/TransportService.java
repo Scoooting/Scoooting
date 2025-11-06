@@ -15,6 +15,7 @@ import org.scoooting.transport.repositories.TransportRepository;
 import org.scoooting.transport.repositories.TransportStatusRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,7 +26,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 @Slf4j
 public class TransportService {
 
@@ -33,8 +33,8 @@ public class TransportService {
     private final TransportStatusRepository statusRepository;
     private final TransportMapper transportMapper;
     private final ResilientUserClient resilientUserClient;
+    private final TransactionalOperator transactionalOperator;
 
-    @Transactional(readOnly = true)
     public Flux<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
         // Calculate boundaries
         double latRange = radiusKm / 111.0;
@@ -46,7 +46,6 @@ public class TransportService {
         ).flatMap(this::toResponseDTO);
     }
 
-    @Transactional(readOnly = true)
     public Flux<TransportResponseDTO> findTransportsByType(
             TransportType type, Double lat, Double lng, Double radiusKm
     ) {
@@ -58,13 +57,12 @@ public class TransportService {
         ).flatMap(this::toResponseDTO);
     }
 
-    @Transactional(readOnly = true)
     public Mono<TransportResponseDTO> getTransportById(Long id) {
         return transportRepository.findById(id)
                 .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
                 .flatMap(this::toResponseDTO);
     }
-    @Transactional(readOnly = true)
+
     public Flux<TransportResponseDTO> findAvailableTransportsByType(TransportType type) {
         return transportRepository.findAvailableByType(type)
                 .flatMap(this::toResponseDTO);
@@ -77,18 +75,20 @@ public class TransportService {
                 .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
-        public Mono<TransportResponseDTO> updateTransportStatus(Long transportId, String statusName) {
+    // 2+ atomic
+    public Mono<TransportResponseDTO> updateTransportStatus(Long transportId, String statusName) {
 
-            return transportRepository.findById(transportId)
-                .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
-                .flatMap(transport -> statusRepository.findByName(statusName)
-                .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")))
-                .flatMap(status -> {
-                    transport.setStatusId(status.getId());
-                    return transportRepository.save(transport);
-                }))
-                .flatMap(this::toResponseDTO);
-        }
+        return transportRepository.findById(transportId)
+            .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
+            .flatMap(transport -> statusRepository.findByName(statusName)
+            .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")))
+            .flatMap(status -> {
+                transport.setStatusId(status.getId());
+                return transportRepository.save(transport);
+            }))
+            .as(transactionalOperator::transactional)
+            .flatMap(this::toResponseDTO);
+    }
 
     public Mono<Long> getStatusId(String name) {
         return statusRepository.findByName(name)
@@ -96,6 +96,7 @@ public class TransportService {
             .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")));
     }
 
+    // find + update
     public Mono<Void> updateCoordinates(UpdateCoordinatesDTO dto) {
         return transportRepository.findById(dto.transportId())
             .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
@@ -104,6 +105,7 @@ public class TransportService {
                 transport.setLongitude(dto.longitude());
                 return transportRepository.save(transport);
             })
+            .as(transactionalOperator::transactional)
             .then();
     }
 
