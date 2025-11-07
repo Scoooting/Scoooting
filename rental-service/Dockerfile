@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 RUN gradle bootJar
 
-FROM openjdk:21
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
 EXPOSE 8083

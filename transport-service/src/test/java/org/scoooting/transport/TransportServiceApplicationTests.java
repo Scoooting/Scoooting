@@ -49,13 +49,14 @@ class TransportServiceApplicationTests {
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
-        System.out.println(postgreSQLContainer.getJdbcUrl());
         registry.add("spring.r2dbc.url", () ->
                 "r2dbc:postgresql://localhost:" + postgreSQLContainer.getMappedPort(5432) + "/transports_db");
         registry.add("spring.r2dbc.username", postgreSQLContainer::getUsername);
         registry.add("spring.r2dbc.password", postgreSQLContainer::getPassword);
 
-        registry.add("user-service.url", () -> "http://localhost:" + userServiceContainer.getMappedPort(8081));;
+        registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
+
+        registry.add("user-service.url", () -> "http://localhost:" + userServiceContainer.getMappedPort(8081));
     }
 
     @BeforeEach
@@ -71,9 +72,7 @@ class TransportServiceApplicationTests {
                     .build();
             transports.add(transport);
         }
-        transportRepository.saveAll(transports)
-                .doOnTerminate(() -> System.out.println("All transports saved!"))
-                .blockLast();
+        transportRepository.saveAll(transports).blockLast();
     }
 
     @Test

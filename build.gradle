@@ -1,0 +1,8 @@
+plugins {
+    id 'base' // позволяет вызывать сборки без указания плагина java
+}
+
+tasks.register("testAll") {
+    dependsOn subprojects.collect { it.path + ":test" }
+    description = "Run tests for all microservices"
+}

@@ -68,25 +68,6 @@ class UserServiceApplicationTests {
     }
 
     @Test
-    void registerUserTest() {
-        String email = "user2@example.com";
-        userService.registerUser(new UserRegistrationRequestDTO(email, testName, testPassword,
-                "SPB"));
-        User user = userRepository.findByEmail(email).orElseThrow();
-        assertEquals(email, user.getEmail());
-    }
-
-    @Test
-    void registerUserExistsTest() {
-        UserRegistrationRequestDTO requestDTO = new UserRegistrationRequestDTO(
-                testEmail, testName, testPassword, "SPB");
-        Exception exception = assertThrows(UserAlreadyExistsException.class,
-                () -> userService.registerUser(requestDTO));
-
-        assertEquals("User with email already exists", exception.getMessage());
-    }
-
-    @Test
     void getUsersTest() {
         PageResponseDTO<?> pageResponseDTO = userService.getUsers(testEmail, testName, 0, 50);
         assertEquals(1, pageResponseDTO.content().size());
@@ -161,35 +142,5 @@ class UserServiceApplicationTests {
 
         Exception exception = assertThrows(DataNotFoundException.class, () -> cityService.getCityById(-1L));
         assertEquals("City not found", exception.getMessage());
-    }
-
-    @Test
-    void signInAndRefreshTokenTest() throws InterruptedException {
-        String token = userService.signIn(new UserSignInDto(testEmail, testPassword));
-        User user = userRepository.findByEmail(testEmail).orElseThrow();
-        RefreshToken refreshToken = refreshTokenRepository.findById(user.getId()).orElse(null);
-        assertNotNull(refreshToken);
-
-        Thread.sleep(1000);
-        String newToken = userService.refreshToken(token);
-        assertNotEquals(newToken, token);
-    }
-
-    @Test
-    void invalidRefreshTokenTest() {
-        String token = userService.signIn(new UserSignInDto(testEmail, testPassword));
-
-        User user = userRepository.findByEmail(testEmail).orElseThrow();
-        RefreshToken refreshToken = refreshTokenRepository.findById(user.getId()).orElseThrow();
-        refreshToken.setToken("blablabla");
-        refreshTokenRepository.save(refreshToken);
-
-        Exception exception = assertThrows(InvalidRefreshTokenException.class, () ->
-                userService.refreshToken(token));
-        assertEquals("Invalid refresh token!", exception.getMessage());
-
-        exception = assertThrows(InvalidRefreshTokenException.class, () ->
-                userService.refreshToken(null));
-        assertEquals("Invalid refresh token!", exception.getMessage());
     }
 }

@@ -9,28 +9,12 @@ services:
       - 5432:5432
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-  db-init:
-    image: postgres:16
-    container_name: db-init
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PGPASSWORD: postgres_pass
-    command: >
-      sh -c "
-        psql -h db -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'users_db'\" | grep -q 1 || psql -h db -U postgres -c 'CREATE DATABASE users_db;' &&
-        psql -h db -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'transports_db'\" | grep -q 1 || psql -h db -U postgres -c 'CREATE DATABASE transports_db;' &&
-        psql -h db -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'rentals_db'\" | grep -q 1 || psql -h db -U postgres -c 'CREATE DATABASE rentals_db;' &&
-        echo 'Databases created successfully!'
-      "
-    restart: "no"
 
   eureka-server:
     build: ./eureka
@@ -66,14 +50,11 @@ services:
     build: ./user-service
     container_name: user-service
     environment:
-      - POSTGRES_URL=jdbc:postgresql://db:5432/users_db
-      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI}
-      - JWT_ACCESS_DURATION=${JWT_ACCESS_DURATION:-900}
-      - JWT_REFRESH_DURATION=${JWT_REFRESH_DURATION:-86400}
+      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI:-http://config-server:8888}
     ports: []
     depends_on:
-      db-init:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
       config-server:
         condition: service_healthy
       eureka-server:
@@ -88,15 +69,11 @@ services:
     build: ./transport-service
     container_name: transport-service
     environment:
-      - POSTGRES_URL=jdbc:postgresql://db:5432/transports_db
-      - R2DBC_URL=r2dbc:postgresql://db:5432/transports_db
-      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI}
-      - POSTGRES_HOST=db
-      - POSTGRES_DB=transports_db
+      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI:-http://config-server:8888}
     ports: []
     depends_on:
-      db-init:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
       config-server:
         condition: service_healthy
       eureka-server:
@@ -111,12 +88,11 @@ services:
     build: ./rental-service
     container_name: rental-service
     environment:
-      - POSTGRES_URL=jdbc:postgresql://db:5432/rentals_db
-      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI}
+      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI:-http://config-server:8888}
     ports: []
     depends_on:
-      db-init:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
       config-server:
         condition: service_healthy
       eureka-server:

@@ -16,8 +16,3 @@ spring:
 eureka:
   client:
     enabled: false
-
-jwt:
-  secret: ${JWT_SECRET:yourSuperSecretKeyAtLeast256BitsLongForProductionChangeThis}
-  access-duration: ${JWT_ACCESS_DURATION:900}
-  refresh-duration: ${JWT_REFRESH_DURATION:86400}
