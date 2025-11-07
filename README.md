@@ -8,10 +8,6 @@
 docker compose up --build -d
 ```
 
-## Тестирование
-
-Для запуска тестов следует предварительно собрать образы всех микросервисов
-
 ## MVP database architecture
 
 ```mermaid
