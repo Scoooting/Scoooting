@@ -23,13 +23,6 @@ public class UserServiceApplication {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI().servers(List.of(new Server().url("/user-service")))
-                .components(new Components()
-                        .addSecuritySchemes("Bearer-jwt",
-                                new SecurityScheme()
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")))
-                .addSecurityItem(new SecurityRequirement().addList("Bearer-jwt"));
+        return new OpenAPI().servers(List.of(new Server().url("/user-service")));
     }
 }

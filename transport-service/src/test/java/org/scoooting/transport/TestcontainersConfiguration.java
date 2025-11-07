@@ -5,6 +5,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -14,6 +15,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -50,44 +52,45 @@ class TestcontainersConfiguration {
     }
 
     @Container
-    static PostgreSQLContainer<?> postgreSQLContainer =  new PostgreSQLContainer<>("postgres:latest")
-                .withExposedPorts(5432)
-                .withUsername("postgres")
-                .withPassword("postgres_pass")
-                .withNetwork(NETWORK)
-                .withNetworkAliases("postgres-test")
-                .withCopyFileToContainer(
-                        MountableFile.forClasspathResource("init_db.sql"),
-                        "/docker-entrypoint-initdb.d/init.sql"
-                );
+    static PostgreSQLContainer<?> postgreSQLContainer =  new PostgreSQLContainer<>("postgres:16")
+            .withExposedPorts(5432)
+            .withUsername("postgres")
+            .withPassword("postgres_pass")
+            .withNetwork(NETWORK)
+            .withNetworkAliases("postgres-test")
+            .withCopyFileToContainer(
+                    MountableFile.forClasspathResource("init_db.sql"),
+                    "/docker-entrypoint-initdb.d/init.sql"
+            );
+
     @Container
     static GenericContainer<?> eurekaServerContainer = new GenericContainer<>(
-                DockerImageName.parse("scoooting-eureka-server:latest"))
-                .withNetwork(NETWORK)
-                .withNetworkAliases("eureka-server")
-                .withExposedPorts(8761)
-                .waitingFor(Wait.forHttp("/actuator/health").forPort(8761));
+            DockerImageName.parse("scoooting-eureka-server:latest"))
+            .withNetwork(NETWORK)
+            .withNetworkAliases("eureka-server")
+            .withExposedPorts(8761)
+            .waitingFor(Wait.forHttp("/actuator/health").forPort(8761));
 
     @Container
     static GenericContainer<?> configServerContainer = new GenericContainer<>(
-                DockerImageName.parse("scoooting-config-server:latest"))
-                .withNetwork(NETWORK)
-                .withNetworkAliases("config-server")
-                .withExposedPorts(8888)
-                .withEnv("CONFIG_USERNAME", envVars.get("CONFIG_USERNAME"))
-                .withEnv("CONFIG_TOKEN", envVars.get("CONFIG_TOKEN"))
+            DockerImageName.parse("scoooting-config-server:latest"))
+            .withNetwork(NETWORK)
+            .withNetworkAliases("config-server")
+            .withExposedPorts(8888)
+            .withEnv("CONFIG_USERNAME", envVars.get("CONFIG_USERNAME"))
+            .withEnv("CONFIG_TOKEN", envVars.get("CONFIG_TOKEN"))
 
-                .waitingFor(Wait.forHttp("/actuator/health").forPort(8888));
+            .waitingFor(Wait.forHttp("/actuator/health").forPort(8888));
 
     @Container
     static GenericContainer<?> userServiceContainer = new GenericContainer<>(
-                DockerImageName.parse("scoooting-user-service:latest"))
-                .withNetwork(NETWORK)
-                .withNetworkAliases("user-service")
-                .withExposedPorts(8081)
-                .withEnv("CONFIG_SERVER_URI", "http://config-server:8888")
-                .withEnv("POSTGRES_URL", "jdbc:postgresql://postgres-test:5432/users_db")
-                .dependsOn(postgreSQLContainer, eurekaServerContainer, configServerContainer);
+            DockerImageName.parse("scoooting-user-service:latest"))
+            .withNetwork(NETWORK)
+            .withNetworkAliases("user-service")
+            .withExposedPorts(8081)
+            .withEnv("CONFIG_SERVER_URI", "http://config-server:8888")
+            .withEnv("POSTGRES_URL", "jdbc:postgresql://postgres-test:5432/users_db")
+            .dependsOn(postgreSQLContainer, eurekaServerContainer, configServerContainer);
 
     static {
         postgreSQLContainer.start();

@@ -57,6 +57,15 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+tasks.register("buildDockerImages", Exec) {
+    doFirst() {
+        commandLine "docker", "compose", "-f", "../docker-compose.yml", "build",
+                "db", "eureka-server", "config-server", "user-service"
+        sleep(2000) // <- It's obligatory or else all tests are failed due to error in actuator.
+    }
+}
+
 tasks.named('test') {
+    dependsOn "buildDockerImages"
     useJUnitPlatform()
 }
