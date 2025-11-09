@@ -26,7 +26,9 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/{email}")
-    public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
+    public ResponseEntity<UserResponseDTO> getUserByEmail(
+            @PathVariable @Email(message = "Invalid email format") String email
+    ) {
         UserResponseDTO user = userService.findUserByEmail(email);
         return ResponseEntity.ok(user);
     }
