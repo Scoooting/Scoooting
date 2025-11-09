@@ -121,9 +121,26 @@ class TransportServiceApplicationTests {
 
     @ParameterizedTest
     @EnumSource(TransportType.class)
-    void findAvailableTransportsByTypeTest(TransportType type) {
-        StepVerifier.create(transportService.findAvailableTransportsByType(type))
-                .expectNextCount(1)
+    void scrollAvailableTransportsByTypeTest(TransportType type) {
+        int page = 0;
+        int size = 20;
+
+        StepVerifier.create(transportService.scrollAvailableTransportsByType(type, page, size))
+                .assertNext(scrollResponse -> {
+                    assertNotNull(scrollResponse);
+                    assertNotNull(scrollResponse.content());
+                    assertEquals(page, scrollResponse.page());
+                    assertEquals(size, scrollResponse.size());
+                    assertNotNull(scrollResponse.hasMore());
+
+                    // check that client isn't empty
+                    assertFalse(scrollResponse.content().isEmpty(),
+                            "Should have at least one " + type + " transport");
+
+                    // check that content size is not bigger than requested size
+                    assertTrue(scrollResponse.content().size() <= size,
+                            "Content size should not exceed requested size");
+                })
                 .verifyComplete();
     }
 
