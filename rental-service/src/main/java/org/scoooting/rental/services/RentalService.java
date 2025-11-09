@@ -86,16 +86,6 @@ public class RentalService {
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));
 
-        if (rental == null) {
-            // Check if it's already completed
-            List<Rental> recentRentals = rentalRepository.findRentalHistoryByUserId(userId, 0, 1);
-            if (!recentRentals.isEmpty() && recentRentals.get(0).getEndTime() != null) {
-                throw new IllegalStateException("Your last rental was already completed at " +
-                        recentRentals.get(0).getEndTime());
-            }
-            throw new IllegalStateException("No active rental found for user");
-        }
-
         // Calculate duration and cost
         LocalDateTime endTime = LocalDateTime.now();
         long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
@@ -173,6 +163,7 @@ public class RentalService {
                         -> Mono.error(new DataNotFoundException("No active rental found for user"))
                 ));
     }
+
     public Mono<PageResponseDTO<RentalResponseDTO>> getUserRentalHistory(Long userId, int page, int size) {
         return Mono.fromCallable(() -> getUserRentalHistoryBlocking(userId, page, size))
                 .subscribeOn(Schedulers.boundedElastic());
