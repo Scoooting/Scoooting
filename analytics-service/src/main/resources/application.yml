@@ -1,0 +1,21 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: analytics-service
+
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}
+
+  cloud:
+    config:
+      fail-fast: false
+      label: lab4
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: analytics
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
