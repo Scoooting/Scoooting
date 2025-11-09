@@ -68,4 +68,5 @@ tasks.register("buildDockerImages", Exec) {
 tasks.named('test') {
     dependsOn "buildDockerImages"
     useJUnitPlatform()
+    finalizedBy tasks.named('jacocoTestReport')
 }

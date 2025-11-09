@@ -92,15 +92,4 @@ public class UserService {
                 cityRepository.findById(user.getCityId()).map(City::getName).orElse(null) : null;
         return userMapper.toResponseDTO(user, roleName, cityName);
     }
-
-    private User findByCredentials(UserSignInDto userSignInDto) throws UserNotFoundException {
-        Optional<User> optionalUser = userRepository.findByEmail(userSignInDto.email());
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if (passwordEncoder.matches(userSignInDto.password(), user.getPasswordHash()))
-                return user;
-        }
-
-        throw new UserNotFoundException("Wrong login or password!");
-    }
 }

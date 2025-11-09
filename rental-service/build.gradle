@@ -58,7 +58,7 @@ tasks.register("buildDockerImages", Exec) {
     doFirst() {
         commandLine "docker", "compose", "-f", "../docker-compose.yml", "build",
                 "db", "eureka-server", "config-server", "user-service", "transport-service"
-//        sleep(2000)
+        sleep(2000)
     }
 
 }
@@ -66,4 +66,5 @@ tasks.register("buildDockerImages", Exec) {
 tasks.named('test') {
     dependsOn "buildDockerImages"
     useJUnitPlatform()
+    finalizedBy tasks.named('jacocoTestReport')
 }
