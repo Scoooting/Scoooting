@@ -3,8 +3,11 @@ package org.scoooting.transport.controllers;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
+import org.scoooting.transport.dto.response.ScrollResponseDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.enums.TransportType;
 import org.scoooting.transport.services.TransportService;
@@ -66,13 +69,20 @@ public class TransportController {
     }
 
     /**
-     * Get all available transports by type
+     * Get all available transports by type with "infinite scrolling"
+     *
+     * @param type
+     * @param page
+     * @param size
+     * @return available transport with hasMore flag for infinite scrolling
      */
     @GetMapping("/available/{type}")
-    public Flux<TransportResponseDTO> findAvailableTransportsByType(
-            @PathVariable TransportType type
+    public Mono<ScrollResponseDTO<TransportResponseDTO>> findAvailableTransportsByType(
+            @PathVariable TransportType type,
+            @RequestParam(defaultValue = "0") @Min(0) Integer page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer size
     ) {
-        return transportService.findAvailableTransportsByType(type);
+        return transportService.scrollAvailableTransportsByType(type, page, size);
     }
 
     /**

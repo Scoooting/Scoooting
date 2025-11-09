@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.scoooting.transport.clients.resilient.ResilientUserClient;
 import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
+import org.scoooting.transport.dto.response.ScrollResponseDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
 import org.scoooting.transport.entities.Transport;
 import org.scoooting.transport.entities.TransportStatus;
@@ -63,9 +64,21 @@ public class TransportService {
                 .flatMap(this::toResponseDTO);
     }
 
-    public Flux<TransportResponseDTO> findAvailableTransportsByType(TransportType type) {
+    public Mono<ScrollResponseDTO<TransportResponseDTO>> scrollAvailableTransportsByType(
+            TransportType type, int page, int size
+    ) {
         return transportRepository.findAvailableByType(type)
-                .flatMap(this::toResponseDTO);
+                .skip((long) page * size)  // skip prev pages
+                .take(size + 1)                 // Get size+1 to prevent hasMore
+                .flatMap(this::toResponseDTO)
+                .collectList()
+                .map(list -> {
+                    boolean hasMore = list.size() > size;
+                    List<TransportResponseDTO> content = hasMore
+                            ? list.subList(0, size)
+                            : list;
+                    return new ScrollResponseDTO<>(content, page, size, hasMore);
+                });
     }
 
     public Mono<Map<String, Long>> getAvailabilityStats() {

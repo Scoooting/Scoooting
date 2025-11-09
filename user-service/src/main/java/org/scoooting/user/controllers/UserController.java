@@ -1,18 +1,14 @@
 package org.scoooting.user.controllers;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.user.dto.common.PageResponseDTO;
 import org.scoooting.user.dto.request.UpdateUserRequestDTO;
 import org.scoooting.user.dto.response.UserResponseDTO;
-import org.scoooting.user.dto.request.UserRegistrationRequestDTO;
 import org.scoooting.user.services.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -33,15 +29,28 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+    /**
+     * "Find-all" request with pagination
+     *
+     * @param email
+     * @param name
+     * @param page
+     * @param size
+     * @return page of defined size containing users
+     */
     @GetMapping("/get-users")
     public ResponseEntity<PageResponseDTO<UserResponseDTO>> getUsers(
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String name,
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer size
     ) {
         PageResponseDTO<UserResponseDTO> users = userService.getUsers(email, name, page, size);
-        return ResponseEntity.ok(users);
+
+        return ResponseEntity.ok()
+                .header("X-Total-Count", String.valueOf(users.totalElements()))
+                .header("X-Total-Pages", String.valueOf(users.totalPages()))
+                .body(users);
     }
 
     @GetMapping("/user/{id}")
