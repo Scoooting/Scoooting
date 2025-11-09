@@ -181,20 +181,6 @@ class TransportServiceApplicationTests {
     }
 
     @Test
-    void getStatusIdTest() {
-        StepVerifier.create(transportService.getStatusId("IN_USE"))
-                .assertNext(statusId -> assertEquals(2, statusId))
-                .verifyComplete();
-
-        StepVerifier.create(transportService.getStatusId("HAHA"))
-                .expectErrorMatches(throwable ->
-                        throwable instanceof DataNotFoundException &&
-                        throwable.getMessage().equals("Status not found")
-                )
-                .verify();
-    }
-
-    @Test
     void updateCoordinatesTest() {
         Transport transport = transports.get(0);
         transportService.updateCoordinates(new UpdateCoordinatesDTO(transport.getId(), 40.0, 50.0)).block();

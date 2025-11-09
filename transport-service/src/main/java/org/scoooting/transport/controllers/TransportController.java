@@ -53,14 +53,6 @@ public class TransportController {
     }
 
     /**
-     * Get transport status id
-     */
-    @GetMapping("/status/{name}")
-    public Mono<Long> getTransportStatusId(@PathVariable String name) {
-        return transportService.getStatusId(name);
-    }
-
-    /**
      * Get specific transport details
      */
     @GetMapping("/{id}")
