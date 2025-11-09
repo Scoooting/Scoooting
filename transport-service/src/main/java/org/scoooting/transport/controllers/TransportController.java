@@ -1,5 +1,8 @@
 package org.scoooting.transport.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -56,6 +59,13 @@ public class TransportController {
      * Get specific transport details
      */
     @GetMapping("/{id}")
+    @Operation(summary = "Get transport by ID",
+            description = "Returns transport details including status and location")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Transport found"),
+            @ApiResponse(responseCode = "404", description = "Transport not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid ID format")
+    })
     public Mono<TransportResponseDTO> getTransport(@PathVariable Long id) {
         return transportService.getTransportById(id);
     }
@@ -69,14 +79,15 @@ public class TransportController {
      * @return available transport with hasMore flag for infinite scrolling
      */
     @GetMapping("/available/{type}")
-    public Mono<ScrollResponseDTO<TransportResponseDTO>> findAvailableTransportsByType(
+    @Operation(summary = "Scroll available transports by type",
+            description = "Infinite scroll pagination without total count (faster)")
+    public Mono<ScrollResponseDTO<TransportResponseDTO>> scrollAvailableTransportsByType(
             @PathVariable TransportType type,
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer size
     ) {
         return transportService.scrollAvailableTransportsByType(type, page, size);
     }
-
     /**
      * Get availability statistics for all transport types
      */
@@ -96,8 +107,16 @@ public class TransportController {
     }
 
     @PutMapping("/update-coordinates")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> updateCoordinates(@Valid @RequestBody UpdateCoordinatesDTO dto) {
+    @Operation(summary = "Update transport coordinates",
+            description = "Updates latitude and longitude of a transport")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Coordinates updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Transport not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid coordinates")
+    })
+    public Mono<TransportResponseDTO> updateCoordinates(
+            @Valid @RequestBody UpdateCoordinatesDTO dto
+    ) {
         return transportService.updateCoordinates(dto);
     }
 }

@@ -36,6 +36,18 @@ public class TransportService {
     private final ResilientUserClient resilientUserClient;
     private final TransactionalOperator transactionalOperator;
 
+    /**
+     * Find nearest transport in requested radius
+     *
+     * Transactional operator IS NEEDED due to N+1 problem:
+     * - without transaction: 1 + N requests to db == N+1 connections
+     * - with transaction: N requests in the same connection
+     *
+     * @param lat
+     * @param lng
+     * @param radiusKm
+     * @return nearest transport from requested latitude and longitude in requested radius
+     */
     public Flux<TransportResponseDTO> findNearestTransports(Double lat, Double lng, Double radiusKm) {
         // Calculate boundaries
         double latRange = radiusKm / 111.0;
@@ -44,7 +56,9 @@ public class TransportService {
         return transportRepository.findAvailableInArea(
                 lat - latRange, lat + latRange,
                 lng - lngRange, lng + lngRange
-        ).flatMap(this::toResponseDTO);
+        )
+                .flatMap(this::toResponseDTO)
+                .as(transactionalOperator::transactional);
     }
 
     public Flux<TransportResponseDTO> findTransportsByType(
@@ -59,9 +73,18 @@ public class TransportService {
     }
 
     public Mono<TransportResponseDTO> getTransportById(Long id) {
+        if (id == null || id <= 0) {
+            return Mono.error(new IllegalArgumentException("Transport ID must be positive"));
+        }
+
         return transportRepository.findById(id)
-                .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
-                .flatMap(this::toResponseDTO);
+                .switchIfEmpty(Mono.error(
+                        new TransportNotFoundException("Transport with id " + id + " not found")
+                ))
+                .flatMap(this::toResponseDTO)
+                .onErrorResume(IllegalArgumentException.class, e ->
+                        Mono.error(new IllegalArgumentException("Invalid transport ID: " + id))
+                );
     }
 
     public Mono<ScrollResponseDTO<TransportResponseDTO>> scrollAvailableTransportsByType(
@@ -103,23 +126,30 @@ public class TransportService {
             .flatMap(this::toResponseDTO);
     }
 
-    public Mono<Long> getStatusId(String name) {
-        return statusRepository.findByName(name)
-            .map(TransportStatus::getId)
-            .switchIfEmpty(Mono.error(new DataNotFoundException("Status not found")));
-    }
-
     // find + update
-    public Mono<Void> updateCoordinates(UpdateCoordinatesDTO dto) {
+    public Mono<TransportResponseDTO> updateCoordinates(UpdateCoordinatesDTO dto) {
+        if (dto.latitude() < -90 || dto.latitude() > 90) {
+            return Mono.error(new IllegalArgumentException(
+                    "Latitude must be between -90 and 90, got: " + dto.latitude()
+            ));
+        }
+        if (dto.longitude() < -180 || dto.longitude() > 180) {
+            return Mono.error(new IllegalArgumentException(
+                    "Longitude must be between -180 and 180, got: " + dto.longitude()
+            ));
+        }
+
         return transportRepository.findById(dto.transportId())
-            .switchIfEmpty(Mono.error(new TransportNotFoundException("Transport not found")))
-            .flatMap(transport -> {
-                transport.setLatitude(dto.latitude());
-                transport.setLongitude(dto.longitude());
-                return transportRepository.save(transport);
-            })
-            .as(transactionalOperator::transactional)
-            .then();
+                .switchIfEmpty(Mono.error(
+                        new TransportNotFoundException("Transport with id " + dto.transportId() + " not found")
+                ))
+                .flatMap(transport -> {
+                    transport.setLatitude(dto.latitude());
+                    transport.setLongitude(dto.longitude());
+                    return transportRepository.save(transport);
+                })
+                .as(transactionalOperator::transactional)  // ← Atomic: SELECT + UPDATE
+                .flatMap(this::toResponseDTO);  // return updated obj
     }
 
     public Mono<TransportResponseDTO> toResponseDTO(Transport transport) {
