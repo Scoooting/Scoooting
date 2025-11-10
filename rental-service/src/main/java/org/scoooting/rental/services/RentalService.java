@@ -22,6 +22,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -65,7 +66,7 @@ public class RentalService {
                 .userId(userId)
                 .transportId(transportId)
                 .statusId(rentalStatus.getId())
-                .startTime(LocalDateTime.now())
+                .startTime(Instant.now())
                 .startLatitude(startLat)
                 .startLongitude(startLng)
                 .build();
@@ -87,7 +88,7 @@ public class RentalService {
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));
 
         // Calculate duration and cost
-        LocalDateTime endTime = LocalDateTime.now();
+        Instant endTime = Instant.now();
         long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
         BigDecimal totalCost = UNLOCK_FEE.add(BASE_RATE.multiply(BigDecimal.valueOf(minutes)));
 
@@ -145,7 +146,7 @@ public class RentalService {
         RentalStatus cancelledStatus = rentalStatusRepository.findByName("CANCELLED")
                 .orElseThrow(() -> new DataNotFoundException("CANCELLED status not found"));
         rental.setStatusId(cancelledStatus.getId());
-        rental.setEndTime(LocalDateTime.now());
+        rental.setEndTime(Instant.now());
         rentalRepository.save(rental);
 
         // Free transport

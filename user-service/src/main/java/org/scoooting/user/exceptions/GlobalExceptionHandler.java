@@ -1,5 +1,6 @@
 package org.scoooting.user.exceptions;
 
+import jakarta.validation.ConstraintViolationException;
 import org.scoooting.user.dto.common.ErrorResponseDTO;
 import org.scoooting.user.exceptions.common.DataNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,30 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * Validation errors for @RequestParam, @PathVariable
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleConstraintViolation(ConstraintViolationException ex) {
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String field = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+            errors.put(field, message);
+        });
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Validation failed",
+                "VALIDATION_ERROR",
+                LocalDateTime.now(),
+                errors.toString(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidRefreshToken(
