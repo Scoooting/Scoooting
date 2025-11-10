@@ -1,5 +1,6 @@
 plugins {
-    id 'base' // позволяет вызывать сборки без указания плагина java
+    id 'base'
+    id 'jacoco'
 }
 
 subprojects {

@@ -3,6 +3,7 @@ package org.scoooting.transport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
@@ -113,8 +114,8 @@ class TransportServiceApplicationTests {
     void getTransportByIdNotFoundTest() {
         StepVerifier.create(transportService.getTransportById(-1L))
                 .expectErrorMatches(throwable ->
-                        throwable instanceof TransportNotFoundException &&
-                        throwable.getMessage().equals("Transport not found")
+                        throwable instanceof IllegalArgumentException &&
+                        throwable.getMessage().equals("Transport ID must be positive")
                 )
                 .verify();
     }
@@ -190,5 +191,22 @@ class TransportServiceApplicationTests {
                     assertEquals(50.0, updatedTransport.getLongitude());
                 })
                 .verifyComplete();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "-90.1, 50.0, 'Latitude must be between -90 and 90, got: '",
+            "90.1, 50.0, 'Latitude must be between -90 and 90, got: '",
+            "40, -180.1, 'Longitude must be between -180 and 180, got: '",
+            "40, 180.1, 'Longitude must be between -180 and 180, got: '"
+    })
+    void updateCoordinatesTestError(double lat, double lon, String message) {
+        Transport transport = transports.get(0);
+        UpdateCoordinatesDTO coordinatesDTO = new UpdateCoordinatesDTO(transport.getId(), lat, lon);
+        StepVerifier.create(transportService.updateCoordinates(coordinatesDTO))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof IllegalArgumentException &&
+                        throwable.getMessage().startsWith(message)
+                ).verify();
     }
 }
