@@ -17,10 +17,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
-/**
- * Просто нафиг закомментил всё, потому что контроллер очень жестко связан с закоменченным сервисом. Сори, за русский :).
- */
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/rentals")
