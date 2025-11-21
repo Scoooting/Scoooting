@@ -12,10 +12,3 @@ spring:
     config:
       fail-fast: false
       label: lab4
-
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: analytics
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

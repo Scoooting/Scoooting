@@ -8,6 +8,7 @@ import org.scoooting.rental.dto.common.PageResponseDTO;
 import org.scoooting.rental.dto.request.EndRentalRequestDTO;
 import org.scoooting.rental.dto.request.StartRentalRequestDTO;
 import org.scoooting.rental.dto.response.RentalResponseDTO;
+import org.scoooting.rental.kafka.AnalyticsProducer;
 import org.scoooting.rental.services.RentalService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -28,6 +31,7 @@ import java.util.Optional;
 public class RentalController {
 
     private final RentalService rentalService;
+    private final AnalyticsProducer analyticsProducer;
 
     /**
      * Start a new rental
@@ -93,6 +97,14 @@ public class RentalController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
     ) {
         return rentalService.getUserRentalHistory(userId, page, size)
-                .map(ResponseEntity::ok);    }
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/test")
+    public Mono<ResponseEntity<Void>> test(@RequestParam String message) {
+        analyticsProducer.send(new RentalResponseDTO(1L, 1L, 1L, LocalDateTime.now(),
+                LocalDateTime.now(), new BigDecimal(20), 20));
+        return Mono.just(ResponseEntity.ok().build());
+    }
 }
 

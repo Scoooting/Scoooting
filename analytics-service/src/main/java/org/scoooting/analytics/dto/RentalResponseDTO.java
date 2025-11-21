@@ -1,5 +1,7 @@
 package org.scoooting.analytics.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 

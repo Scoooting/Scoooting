@@ -22,7 +22,7 @@ public class RentalServiceApplication {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI().servers(List.of(new Server().url("/rental-service")))
+        return new OpenAPI().servers(List.of(new Server().url("/")))
                 .components(new Components()
                         .addSecuritySchemes("Bearer-jwt",
                                 new SecurityScheme()
