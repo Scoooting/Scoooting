@@ -11,7 +11,11 @@ public class AnalyticsProducer {
 
     private final KafkaTemplate<String, RentalResponseDTO> kafkaTemplate;
 
-    public void send(RentalResponseDTO rentalResponseDTO) {
-        kafkaTemplate.send("rentalStats", rentalResponseDTO);
+    public void sendStartRental(RentalResponseDTO rentalResponseDTO) {
+        kafkaTemplate.send("rentalStatsStart", rentalResponseDTO);
+    }
+
+    public void sendFinishRental(RentalResponseDTO rentalResponseDTO) {
+        kafkaTemplate.send("rentalStatsFinish", rentalResponseDTO);
     }
 }

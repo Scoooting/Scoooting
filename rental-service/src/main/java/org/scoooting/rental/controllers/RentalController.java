@@ -18,7 +18,6 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 /**
  * Просто нафиг закомментил всё, потому что контроллер очень жестко связан с закоменченным сервисом. Сори, за русский :).
@@ -102,7 +101,7 @@ public class RentalController {
 
     @GetMapping("/test")
     public Mono<ResponseEntity<Void>> test(@RequestParam String message) {
-        analyticsProducer.send(new RentalResponseDTO(1L, 1L, 1L, LocalDateTime.now(),
+        analyticsProducer.sendStartRental(new RentalResponseDTO(1L, 1L, 1L, LocalDateTime.now(),
                 LocalDateTime.now(), new BigDecimal(20), 20));
         return Mono.just(ResponseEntity.ok().build());
     }
