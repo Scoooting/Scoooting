@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,22 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleUserNotFound(
+            UserNotFoundException ex,
+            ServerWebExchange exchange
+    ) {
+        log.error("User not found: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "USER_NOT_FOUND",
+                LocalDateTime.now(),
+                exchange.getRequest().getPath().value(),
+                null
+        );
+        return Mono.just(ResponseEntity.badRequest().body(error));  // 400!
+    }
 
     @ExceptionHandler(TransportServiceException.class)
     public Mono<ResponseEntity<ErrorResponseDTO>> handleTransportServiceException(TransportServiceException ex) {
@@ -32,16 +49,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UserServiceException.class)
-    public Mono<ResponseEntity<ErrorResponseDTO>> handleUserServiceException(UserServiceException ex) {
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleUserServiceException(
+            UserServiceException ex,
+            ServerWebExchange exchange
+    ) {
         log.error("User service error: {}", ex.getMessage());
         ErrorResponseDTO error = new ErrorResponseDTO(
                 ex.getMessage(),
                 "USER_SERVICE_ERROR",
                 LocalDateTime.now(),
-                "/api/rentals",
+                exchange.getRequest().getPath().value(),
                 null
         );
-        return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error));
+        return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error));  // 503!
     }
 
     @ExceptionHandler(IllegalStateException.class)
@@ -88,6 +108,22 @@ public class GlobalExceptionHandler {
                 fieldErrors
         );
         return Mono.just(ResponseEntity.badRequest().body(error));
+    }
+
+    @ExceptionHandler(TransportNotFoundException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleTransportNotFound(
+            TransportNotFoundException ex,
+            ServerWebExchange exchange
+    ) {
+        log.error("Transport not found: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                ex.getMessage(),
+                "TRANSPORT_NOT_FOUND",
+                LocalDateTime.now(),
+                exchange.getRequest().getPath().value(),
+                null
+        );
+        return Mono.just(ResponseEntity.badRequest().body(error));  // 400!
     }
 
     @ExceptionHandler(Exception.class)

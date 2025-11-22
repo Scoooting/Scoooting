@@ -1,0 +1,58 @@
+plugins {
+    id 'base'
+    id 'jacoco'
+}
+
+subprojects {
+    apply plugin: 'jacoco'
+
+    plugins.withType(JavaPlugin) {
+        jacocoTestReport {
+            reports {
+                xml.required = true
+                html.required = true
+            }
+            doLast {
+                def file = reports.xml.outputLocation.asFile.get()
+                if (file.exists()) {
+                    file.text = file.text.replaceAll(/<!DOCTYPE[^>]*>/, '')
+                }
+            }
+            finalizedBy 'printCoverage'
+        }
+
+        tasks.register('printCoverage') {
+            dependsOn 'jacocoTestReport'
+            doLast {
+                def reportFile = file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml")
+                if (!reportFile.exists()) {
+                    println "Coverage report not found for ${project.name}"
+                    return
+                }
+
+                def parser = new XmlSlurper().parse(reportFile)
+                def classes = parser.package.class.findAll { it.@name.text().contains('/services/') }
+
+                if (classes.isEmpty()) {
+                    println "No classes found in 'services' package for ${project.name}"
+                    return
+                }
+
+                long covered = 0
+                long missed = 0
+
+                classes.each { c ->
+                    c.counter.each {
+                        if (it.@type == 'LINE') {
+                            covered += it.@covered.toLong()
+                            missed += it.@missed.toLong()
+                        }
+                    }
+                }
+
+                def coverage = covered + missed > 0 ? (covered / (covered + missed)) * 100 : 0
+                println "Services coverage for ${project.name}: ${String.format('%.2f', coverage)}%"
+            }
+        }
+    }
+}

@@ -17,10 +17,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
-/**
- * Просто нафиг закомментил всё, потому что контроллер очень жестко связан с закоменченным сервисом. Сори, за русский :).
- */
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/rentals")
@@ -90,7 +86,7 @@ public class RentalController {
     public Mono<ResponseEntity<PageResponseDTO<RentalResponseDTO>>> getRentalHistory(
             @RequestParam Long userId, // Should come from auth context
             @RequestParam(defaultValue = "0") @Min(0) Integer page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) Integer size
+            @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer size
     ) {
         return rentalService.getUserRentalHistory(userId, page, size)
                 .map(ResponseEntity::ok);    }

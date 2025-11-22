@@ -50,7 +50,7 @@ class TestcontainersConfiguration {
     }
 
     @Container
-    static PostgreSQLContainer<?> postgreSQLContainer =  new PostgreSQLContainer<>("postgres:latest")
+    static PostgreSQLContainer<?> postgreSQLContainer =  new PostgreSQLContainer<>("postgres:16")
             .withExposedPorts(5432)
             .withUsername("postgres")
             .withPassword("postgres_pass")

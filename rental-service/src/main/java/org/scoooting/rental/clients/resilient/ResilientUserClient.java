@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.scoooting.rental.clients.feign.FeignUserClient;
 import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
 import org.scoooting.rental.dto.response.UserResponseDTO;
+import org.scoooting.rental.exceptions.UserNotFoundException;
 import org.scoooting.rental.exceptions.UserServiceException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -25,18 +26,25 @@ public class ResilientUserClient {
         try {
             return userServiceApi.getUserById(id);
         } catch (FeignException.NotFound e) {
-            e.printStackTrace();
-            throw new UserServiceException("User with ID " + id + " not found");
-        }
-    }
+            log.error("User {} not found in user-service", id);
+            throw new UserNotFoundException("User with ID " + id + " not found");
+        } catch (FeignException e) {
+            log.error("User service unavailable: {}", e.getMessage());
+            throw new UserServiceException("User service is currently unavailable");
+        }    }
 
     public ResponseEntity<UserResponseDTO> getUserByIdFallback(Long id, Throwable t) {
         log.error("FALLBACK getUserById! userId: {}, error: {}", id, t.getClass().getSimpleName());
 
-        if (!(t instanceof UserServiceException && t.getMessage().contains("not found"))) {
-            throw new UserServiceException("User service unavailable", t);
+        if (t instanceof UserNotFoundException) {
+            throw (UserNotFoundException) t;
         }
-        throw (UserServiceException) t;
+
+        if (t instanceof UserServiceException) {
+            throw (UserServiceException) t;
+        }
+
+        throw new UserServiceException("User service unavailable", t);
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "updateUserFallback")
@@ -45,9 +53,10 @@ public class ResilientUserClient {
         try {
             return userServiceApi.updateUser(id, request);
         } catch (FeignException.NotFound e) {
-            throw new UserServiceException("User with ID " + id + " not found");
-        }
-    }
+            throw new UserNotFoundException("User with ID " + id + " not found");
+        } catch (FeignException e) {
+            throw new UserServiceException("User service is currently unavailable");
+        }    }
 
     public ResponseEntity<UserResponseDTO> updateUserFallback(Long id, UpdateUserRequestDTO request, Throwable t) {
         log.error("FALLBACK updateUser! userId: {}, error: {}", id, t.getClass().getSimpleName());

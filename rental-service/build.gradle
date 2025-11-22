@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'org.scoooting'
@@ -51,9 +52,21 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'io.projectreactor:reactor-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+tasks.register("buildDockerImages", Exec) {
+    doFirst() {
+        commandLine "docker", "compose", "-f", "../docker-compose.yml", "build",
+                "db", "eureka-server", "config-server", "user-service", "transport-service"
+        sleep(2000)
+    }
+
+}
+
 tasks.named('test') {
+    dependsOn "buildDockerImages"
     useJUnitPlatform()
+    finalizedBy tasks.named('jacocoTestReport')
 }
