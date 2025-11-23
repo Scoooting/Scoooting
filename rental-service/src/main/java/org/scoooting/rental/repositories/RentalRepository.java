@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-
 @Repository
 public interface RentalRepository extends CrudRepository<Rental, Long> {
 
@@ -29,6 +28,17 @@ public interface RentalRepository extends CrudRepository<Rental, Long> {
 
     @Query("SELECT COUNT(*) FROM rentals WHERE user_id = :userId")
     long countRentalsByUserId(Long userId);
+
+    // Для Analyst - все аренды
+    @Query("""
+        SELECT * FROM rentals 
+        ORDER BY start_time DESC
+        LIMIT :limit OFFSET :offset
+        """)
+    List<Rental> findAllRentals(int offset, int limit);
+
+    @Query("SELECT COUNT(*) FROM rentals")
+    long countAllRentals();
 
     List<Rental> findByStatusId(Long statusId);
 }

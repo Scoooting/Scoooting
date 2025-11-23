@@ -409,4 +409,144 @@ public class RentalService {
         double lngDiff = Math.abs(lng1 - lng2) * 111.0 * Math.cos(Math.toRadians(lat1));
         return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff);
     }
+
+    /**
+     * Force end any rental by ID (Support operation).
+     *
+     * Used when Support needs to manually end rental due to:
+     * - User complaint (transport broken, accident)
+     * - System issue (app crash, payment failure)
+     * - Emergency (transport stolen, dangerous situation)
+     */
+    public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng) {
+        return Mono.fromCallable(() -> forceEndRentalBlocking(rentalId, endLat, endLng))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    /**
+     * Force end rental by rental ID (Support only).
+     *
+     * TRANSACTION IS CRITICAL:
+     * - Similar to regular endRental but by rentalId instead of userId
+     * - Support can end ANY user's rental (not just their own)
+     * - Must calculate cost and update transport atomically
+     *
+     * WHY transaction:
+     * 1. ATOMICITY: Rental completion + transport release must be atomic
+     * 2. CONSISTENCY: Only one force-end allowed (same as regular end)
+     * 3. FINANCIAL: Cost calculation must be accurate and committed
+     *
+     * @throws DataNotFoundException if rental not found
+     * @throws IllegalStateException if rental already ended
+     */
+    @Transactional
+    protected RentalResponseDTO forceEndRentalBlocking(Long rentalId, Double endLat, Double endLng) {
+        // Find rental by ID
+        Rental rental = rentalRepository.findById(rentalId)
+                .orElseThrow(() -> new DataNotFoundException("Rental not found"));
+
+        // Check if already ended
+        if (rental.getEndTime() != null) {
+            throw new IllegalStateException("Rental already ended");
+        }
+
+        // Calculate duration and cost
+        Instant endTime = Instant.now();
+        long minutes = Duration.between(rental.getStartTime(), endTime).toMinutes();
+        BigDecimal totalCost = UNLOCK_FEE.add(BASE_RATE.multiply(BigDecimal.valueOf(minutes)));
+
+        // Calculate distance
+        double distance = calculateDistance(
+                rental.getStartLatitude(), rental.getStartLongitude(),
+                endLat, endLng
+        );
+
+        // Update rental
+        rental.setEndTime(endTime);
+        rental.setEndLatitude(endLat);
+        rental.setEndLongitude(endLng);
+        rental.setDurationMinutes((int) minutes);
+        rental.setTotalCost(totalCost);
+        rental.setDistanceKm(BigDecimal.valueOf(distance));
+
+        // Set COMPLETED status
+        RentalStatus completedStatus = rentalStatusRepository.findByName("COMPLETED")
+                .orElseThrow(() -> new DataNotFoundException("COMPLETED status not found"));
+        rental.setStatusId(completedStatus.getId());
+
+        rental = rentalRepository.save(rental);
+
+        // Update transport
+        TransportResponseDTO transport = transportClient.getTransport(rental.getTransportId()).getBody();
+        transportClient.updateTransportStatus(transport.id(), "AVAILABLE");
+        transportClient.updateTransportCoordinates(new UpdateCoordinatesDTO(transport.id(), endLat, endLng));
+
+        // Award bonus points to user
+        UserResponseDTO user = feignUserClient.getUserById(rental.getUserId()).getBody();
+        feignUserClient.updateUser(rental.getUserId(), new UpdateUserRequestDTO(null, null,
+                user.bonuses() + (int) minutes));
+
+        return rentalMapper.toResponseDTO(rental);
+    }
+
+    /**
+     * Get all rentals in system (Analyst operation).
+     *
+     * Used for:
+     * - Business analytics (peak hours, popular routes)
+     * - Revenue analysis
+     * - User behavior patterns
+     * - System performance metrics
+     */
+    public Mono<PageResponseDTO<RentalResponseDTO>> getAllRentals(int page, int size) {
+        return Mono.fromCallable(() -> getAllRentalsBlocking(page, size))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    /**
+     * Get all system rentals with pagination (Analyst only).
+     *
+     * TRANSACTION (readOnly=true) IS NEEDED:
+     * - Makes 2 queries:
+     *   1. SELECT all rentals with pagination
+     *   2. SELECT COUNT(*) for total
+     * - Without transaction: 2 separate connections, possible inconsistency
+     * - With transaction: single consistent snapshot
+     *
+     * WHY readOnly=true:
+     * - Analyst queries are read-only by design
+     * - No data modifications
+     * - Allows JDBC optimizations
+     * - Prevents accidental data changes
+     *
+     * PERFORMANCE NOTE:
+     * - This can return thousands of rentals
+     * - Consider adding filters (date range, status, etc.) in production
+     * - For now, basic pagination is sufficient for lab work
+     *
+     * @param page page number (0-indexed)
+     * @param size items per page
+     * @return paginated list of all rentals
+     */
+    @Transactional(readOnly = true)
+    protected PageResponseDTO<RentalResponseDTO> getAllRentalsBlocking(int page, int size) {
+        int offset = page * size;
+        List<Rental> rentals = rentalRepository.findAllRentals(offset, size);
+        long total = rentalRepository.countAllRentals();
+
+        List<RentalResponseDTO> rentalDTOs = rentals.stream()
+                .map(rentalMapper::toResponseDTO)
+                .toList();
+
+        int totalPages = (int) Math.ceil((double) total / size);
+        return new PageResponseDTO<>(
+                rentalDTOs,
+                page,
+                size,
+                total,
+                totalPages,
+                page == 0,
+                page >= totalPages - 1
+        );
+    }
 }

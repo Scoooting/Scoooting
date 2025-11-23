@@ -1,5 +1,7 @@
 package org.scoooting.rental.config;
 
+import feign.Logger;
+import feign.RequestInterceptor;
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,5 +13,15 @@ public class FeignConfig {
     @Bean
     public HttpMessageConverters messageConverters() {
         return new HttpMessageConverters(new MappingJackson2HttpMessageConverter());
+    }
+
+    @Bean
+    public RequestInterceptor requestInterceptor() {
+        return new FeignJwtInterceptor();
+    }
+
+    @Bean
+    Logger.Level feignLoggerLevel() {
+        return Logger.Level.FULL;
     }
 }

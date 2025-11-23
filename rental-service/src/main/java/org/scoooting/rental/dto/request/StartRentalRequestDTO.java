@@ -9,10 +9,6 @@ import jakarta.validation.constraints.Positive;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record StartRentalRequestDTO(
-        @NotNull(message = "User ID is required")
-        @Positive(message = "User ID must be positive")
-        Long userId,
-
         @NotNull(message = "Transport ID is required")
         @Positive(message = "Transport ID must be positive")
         Long transportId,

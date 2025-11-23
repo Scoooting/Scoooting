@@ -1,6 +1,7 @@
 package org.scoooting.user.exceptions;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.scoooting.user.dto.common.ErrorResponseDTO;
 import org.scoooting.user.exceptions.common.DataNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -10,13 +11,54 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
+
+    /**
+     * Handle Spring Security Access Denied (403)
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
+            AccessDeniedException ex,
+            WebRequest request
+    ) {
+        log.error("Access denied: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Access denied. You don't have permission to access this resource.",
+                "FORBIDDEN",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                Map.of("details", "Insufficient permissions")
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
+     * Handle Authentication errors (401)
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(
+            AuthenticationException ex,
+            WebRequest request
+    ) {
+        log.error("Authentication failed: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Authentication required",
+                "UNAUTHORIZED",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
 
     /**
      * Validation errors for @RequestParam, @PathVariable

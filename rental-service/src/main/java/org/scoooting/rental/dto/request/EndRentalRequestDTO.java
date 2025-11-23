@@ -9,10 +9,6 @@ import jakarta.validation.constraints.Positive;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record EndRentalRequestDTO(
-        @NotNull(message = "User ID is required")
-        @Positive(message = "User ID must be positive")
-        Long userId,
-
         @NotNull(message = "End latitude is required")
         @DecimalMin(value = "-90.0", message = "Latitude must be >= -90")
         @DecimalMax(value = "90.0", message = "Latitude must be <= 90")
