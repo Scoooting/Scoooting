@@ -5,10 +5,7 @@ import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
 import org.scoooting.rental.dto.response.UserResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @FeignClient(name = "user-service", url = "${user-service.url:}", path = "/api/users")
 public interface FeignUserClient {
@@ -19,10 +16,10 @@ public interface FeignUserClient {
     @GetMapping("/me")
     ResponseEntity<UserResponseDTO> getCurrentUser();
 
-    @PutMapping("/update-user/{id}")
-    ResponseEntity<UserResponseDTO> updateUser(
+    @PostMapping("/user/{id}/bonuses")
+    ResponseEntity<UserResponseDTO> addBonuses(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateUserRequestDTO request
+            @RequestParam Integer amount
     );
 
     @GetMapping("/city/{name}")

@@ -202,8 +202,8 @@ public class UserService {
      * Support/Admin can add or deduct bonuses with comment for audit
      */
     @Transactional
-    public UserResponseDTO addBonuses(Long userId, Integer amount, Long supportUserId) {
-        if (amount == null || amount == 0) {
+    public UserResponseDTO addBonuses(Long userId, Integer amount) {
+        if (amount == null) {
             throw new IllegalArgumentException("Bonus amount must be non-zero");
         }
 

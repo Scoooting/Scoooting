@@ -16,11 +16,6 @@ public class FeignConfig {
     }
 
     @Bean
-    public RequestInterceptor requestInterceptor() {
-        return new FeignJwtInterceptor();
-    }
-
-    @Bean
     Logger.Level feignLoggerLevel() {
         return Logger.Level.FULL;
     }

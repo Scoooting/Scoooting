@@ -89,7 +89,7 @@ public class UserController {
             tags = {"Staff Operations"}
     )
     @GetMapping("/user/{id}")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ANALYST', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPPORT', 'ANALYST', 'ADMIN', 'OPERATOR')")
     public ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id) {
         UserResponseDTO user = userService.findUserById(id);
         return ResponseEntity.ok(user);
@@ -149,13 +149,12 @@ public class UserController {
             tags = {"Support Operations"}
     )
     @PostMapping("/user/{id}/bonuses")
-    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPPORT', 'ADMIN', 'OPERATOR')")
     public ResponseEntity<UserResponseDTO> addBonuses(
             @PathVariable Long id,
-            @RequestParam Integer amount,
-            @AuthenticationPrincipal UserPrincipal principal
+            @RequestParam Integer amount
     ) {
-        UserResponseDTO user = userService.addBonuses(id, amount, principal.getUserId());
+        UserResponseDTO user = userService.addBonuses(id, amount);
         return ResponseEntity.ok(user);
     }
 

@@ -2,6 +2,7 @@ package org.scoooting.rental.config;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,11 +15,11 @@ import java.util.Date;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class ServiceAccountJwtProvider {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+    private final JwtService jwtService;
 
     private String cachedToken;
     private Instant tokenExpiry;
@@ -33,19 +34,7 @@ public class ServiceAccountJwtProvider {
         Instant now = Instant.now();
         Instant expiry = now.plus(1, ChronoUnit.HOURS);
 
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-
-        cachedToken = Jwts.builder()
-                .subject("rental-service")
-                .claims(Map.of(
-                        "userId", -1L,  // special ID for service account
-                        "email", "rental-service@internal",
-                        "role", "OPERATOR"  // OPERATOR role
-                ))
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(expiry))
-                .signWith(key)
-                .compact();
+        cachedToken = jwtService.generateServiceToken();
 
         tokenExpiry = expiry;
         log.info("Generated new service account token, expires at: {}", expiry);

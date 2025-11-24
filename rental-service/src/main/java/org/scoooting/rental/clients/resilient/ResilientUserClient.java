@@ -2,7 +2,6 @@ package org.scoooting.rental.clients.resilient;
 
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.scoooting.rental.clients.feign.FeignUserClient;
@@ -66,11 +65,11 @@ public class ResilientUserClient {
         throw new UserServiceException("User service unavailable", t);
     }
 
-    @CircuitBreaker(name = "userService", fallbackMethod = "updateUserFallback")
-    public ResponseEntity<UserResponseDTO> updateUser(Long id, @Valid UpdateUserRequestDTO request) {
-        log.debug("Calling user-service to update userId: {}", id);
+    @CircuitBreaker(name = "userService", fallbackMethod = "addBonusesFallback")
+    public ResponseEntity<UserResponseDTO> addBonuses(Long id, Integer bonuses) {
+        log.debug("Calling addBonuses: {}", id);
         try {
-            return userServiceApi.updateUser(id, request);
+            return userServiceApi.addBonuses(id, bonuses);
         } catch (FeignException.NotFound e) {
             throw new UserNotFoundException("User with ID " + id + " not found");
         } catch (FeignException e) {
@@ -78,8 +77,8 @@ public class ResilientUserClient {
         }
     }
 
-    public ResponseEntity<UserResponseDTO> updateUserFallback(Long id, UpdateUserRequestDTO request, Throwable t) {
-        log.error("FALLBACK updateUser! userId: {}, error: {}", id, t.getClass().getSimpleName());
+    public ResponseEntity<UserResponseDTO> addBonusesFallback(Long id, UpdateUserRequestDTO request, Throwable t) {
+        log.error("FALLBACK addBonuses! userId: {}, error: {}", id, t.getClass().getSimpleName());
         if (t instanceof UserNotFoundException) {
             throw (UserNotFoundException) t;
         }

@@ -10,6 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -46,5 +51,24 @@ public class JwtService {
     private SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public String generateServiceToken() {
+        Date date = Date.from(LocalDateTime.now()
+                .plusHours(1)
+                .atZone(ZoneId.systemDefault())
+                .toInstant());
+
+        return Jwts.builder()
+                .subject("rental-service")
+                .claims(Map.of(
+                        "userId", -1L,  // special ID for service account
+                        "email", "rental-service@internal",
+                        "role", "OPERATOR"  // OPERATOR role
+                ))
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(date)
+                .signWith(getSignInKey())
+                .compact();
     }
 }

@@ -116,7 +116,7 @@ public class RentalService {
 
         // Validate user exists
         FeignJwtInterceptor.setUserToken("Bearer " + getCurrentUserToken());
-        feignUserClient.getCurrentUser();
+        feignUserClient.getUserById(userId);
 
         // Validate transport
         FeignJwtInterceptor.clear();
@@ -250,9 +250,8 @@ public class RentalService {
 
         // Award bonus points
         FeignJwtInterceptor.setUserToken("Bearer " + getCurrentUserToken());
-        UserResponseDTO user = feignUserClient.getCurrentUser().getBody();
-        feignUserClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
-                user.bonuses() + (int) minutes));
+        UserResponseDTO user = feignUserClient.getUserById(userId).getBody();
+        feignUserClient.addBonuses(userId, user.bonuses() + (int) minutes);
 
         return rentalMapper.toResponseDTO(rental);
     }
@@ -436,11 +435,11 @@ public class RentalService {
      */
     public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng, String authToken) {
         return Mono.fromCallable(() -> {
-            FeignJwtInterceptor.setAuthToken(authToken);
+            FeignJwtInterceptor.setUserToken(authToken);
             try {
                 return forceEndRentalBlocking(rentalId, endLat, endLng);
             } finally {
-                FeignJwtInterceptor.clearAuthToken();
+                FeignJwtInterceptor.clear();
             }
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -505,8 +504,7 @@ public class RentalService {
 
         // Award bonus points to user
         UserResponseDTO user = feignUserClient.getUserById(rental.getUserId()).getBody();
-        feignUserClient.updateUser(rental.getUserId(), new UpdateUserRequestDTO(null, null,
-                user.bonuses() + (int) minutes));
+        feignUserClient.addBonuses(rental.getUserId(),user.bonuses() + (int) minutes);
 
         return rentalMapper.toResponseDTO(rental);
     }
