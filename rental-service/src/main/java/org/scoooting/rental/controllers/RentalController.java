@@ -41,19 +41,15 @@ public class RentalController {
     @PostMapping("/start")
     public Mono<ResponseEntity<RentalResponseDTO>> startRental(
             @Valid @RequestBody StartRentalRequestDTO request,
-            @AuthenticationPrincipal UserPrincipal principal,
-            ServerWebExchange exchange
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("User {} starting rental for transport {}", principal.getUserId(), request.transportId());
-
-        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
 
         return rentalService.startRental(
                 principal.getUserId(),
                 request.transportId(),
                 request.startLatitude(),
-                request.startLongitude(),
-                authToken
+                request.startLongitude()
         ).map(rental -> ResponseEntity.status(HttpStatus.CREATED).body(rental));
     }
 
@@ -65,18 +61,14 @@ public class RentalController {
     @PostMapping("/end")
     public Mono<ResponseEntity<RentalResponseDTO>> endRental(
             @Valid @RequestBody EndRentalRequestDTO request,
-            @AuthenticationPrincipal UserPrincipal principal,
-            ServerWebExchange exchange
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("User {} ending their rental", principal.getUserId());
-
-        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
 
         return rentalService.endRental(
                 principal.getUserId(),
                 request.endLatitude(),
-                request.endLongitude(),
-                authToken
+                request.endLongitude()
         ).map(ResponseEntity::ok);
     }
 
@@ -87,14 +79,11 @@ public class RentalController {
     )
     @PostMapping("/cancel")
     public Mono<ResponseEntity<Void>> cancelRental(
-            @AuthenticationPrincipal UserPrincipal principal,
-            ServerWebExchange exchange
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("User {} cancelling their rental", principal.getUserId());
 
-        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
-
-        return rentalService.cancelRental(principal.getUserId(), authToken)
+        return rentalService.cancelRental(principal.getUserId())
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 

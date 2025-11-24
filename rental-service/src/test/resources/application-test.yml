@@ -9,3 +9,8 @@ spring:
 eureka:
   client:
     enabled: false
+
+jwt:
+  secret: dGhpc2lzdGhlc3VwZXJzZWNyZXRrZXlmb3Jqd3R0b2tlbmdlbmVyYXRpb25hbmRzaWduaW5nMjAyNA==
+  access-duration: ${JWT_ACCESS_DURATION:900}
+  refresh-duration: ${JWT_REFRESH_DURATION:86400}
