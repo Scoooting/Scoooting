@@ -16,7 +16,7 @@ import org.scoooting.rental.exceptions.DataNotFoundException;
 import org.scoooting.rental.mappers.RentalMapper;
 import org.scoooting.rental.repositories.RentalRepository;
 import org.scoooting.rental.repositories.RentalStatusRepository;
-import org.springframework.security.core.parameters.P;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -25,7 +25,6 @@ import reactor.core.scheduler.Schedulers;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -51,12 +50,7 @@ public class RentalService {
      */
     public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng, String authToken) {
         return Mono.fromCallable(() -> {
-            FeignJwtInterceptor.setAuthToken(authToken);
-            try {
-                return startRentalBlocking(userId, transportId, startLat, startLng);
-            } finally {
-                FeignJwtInterceptor.clearAuthToken();
-            }
+            return startRentalBlocking(userId, transportId, startLat, startLng);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -121,9 +115,11 @@ public class RentalService {
         }
 
         // Validate user exists
+        FeignJwtInterceptor.setUserToken("Bearer " + getCurrentUserToken());
         feignUserClient.getCurrentUser();
 
         // Validate transport
+        FeignJwtInterceptor.clear();
         transportClient.getTransport(transportId);
 
         RentalStatus rentalStatus = rentalStatusRepository.findByName("ACTIVE")
@@ -139,6 +135,8 @@ public class RentalService {
                 .startLongitude(startLng)
                 .build();
         rental = rentalRepository.save(rental);
+
+        FeignJwtInterceptor.useServiceAccount();
         transportClient.updateTransportStatus(transportId, "IN_USE");
 
         return rentalMapper.toResponseDTO(rental);
@@ -149,12 +147,7 @@ public class RentalService {
      */
     public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng, String authToken) {
         return Mono.fromCallable(() -> {
-            FeignJwtInterceptor.setAuthToken(authToken);
-            try {
-                return endRentalBlocking(userId, endLat, endLng);
-            } finally {
-                FeignJwtInterceptor.clearAuthToken();
-            }
+            return endRentalBlocking(userId, endLat, endLng);
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
@@ -248,11 +241,15 @@ public class RentalService {
         rental = rentalRepository.save(rental);
 
         // Update transport
+        FeignJwtInterceptor.clear();
         TransportResponseDTO transport = transportClient.getTransport(rental.getTransportId()).getBody();
+
+        FeignJwtInterceptor.useServiceAccount();
         transportClient.updateTransportStatus(transport.id(), "AVAILABLE");
         transportClient.updateTransportCoordinates(new UpdateCoordinatesDTO(transport.id(), endLat, endLng));
 
         // Award bonus points
+        FeignJwtInterceptor.setUserToken("Bearer " + getCurrentUserToken());
         UserResponseDTO user = feignUserClient.getCurrentUser().getBody();
         feignUserClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
                 user.bonuses() + (int) minutes));
@@ -265,14 +262,9 @@ public class RentalService {
      */
     public Mono<Void> cancelRental(Long userId, String authToken) {
         return Mono.fromCallable(() -> {
-                FeignJwtInterceptor.setAuthToken(authToken);
-                try {
                     cancelRentalBlocking(userId);
                     return null;
-                } finally {
-                    FeignJwtInterceptor.clearAuthToken();
-                }
-            })
+                })
             .subscribeOn(Schedulers.boundedElastic())
             .then();
     }
@@ -338,7 +330,10 @@ public class RentalService {
         rentalRepository.save(rental);
 
         // Free transport
+        FeignJwtInterceptor.clear();
         TransportResponseDTO transport = transportClient.getTransport(rental.getTransportId()).getBody();
+
+        FeignJwtInterceptor.useServiceAccount();
         transportClient.updateTransportStatus(transport.id(), "AVAILABLE");
     }
 
@@ -575,5 +570,13 @@ public class RentalService {
                 page == 0,
                 page >= totalPages - 1
         );
+    }
+
+    private String getCurrentUserToken() {
+        // Token in ThreadLocal is stored here from controller
+        // We can extract from SecurityContext if needed
+        return ReactiveSecurityContextHolder.getContext()
+                .map(ctx -> ctx.getAuthentication().getCredentials().toString())
+                .block();
     }
 }
