@@ -48,7 +48,7 @@ public class RentalService {
      * - Prevents blocking reactive event loop threads
      * - Actual transaction logic is in startRentalBlocking()
      */
-    public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng, String authToken) {
+    public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng) {
         return Mono.fromCallable(() -> {
             return startRentalBlocking(userId, transportId, startLat, startLng);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -145,7 +145,7 @@ public class RentalService {
     /**
      * End rental (reactive wrapper).
      */
-    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng, String authToken) {
+    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng) {
         return Mono.fromCallable(() -> {
             return endRentalBlocking(userId, endLat, endLng);
         }).subscribeOn(Schedulers.boundedElastic());
@@ -259,7 +259,7 @@ public class RentalService {
     /**
      * Cancel active rental (reactive wrapper).
      */
-    public Mono<Void> cancelRental(Long userId, String authToken) {
+    public Mono<Void> cancelRental(Long userId) {
         return Mono.fromCallable(() -> {
                     cancelRentalBlocking(userId);
                     return null;
