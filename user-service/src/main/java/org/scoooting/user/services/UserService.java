@@ -271,6 +271,7 @@ public class UserService {
             user.setCityId(city.getId());
         }
 
+        user.setBonuses(0);
         user = userRepository.save(user);
         return addRefreshToken(user);
     }
