@@ -3,6 +3,7 @@ package org.scoooting.rental.services;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.rental.clients.resilient.ResilientTransportService;
 import org.scoooting.rental.clients.resilient.ResilientUserClient;
+import org.scoooting.rental.config.FeignJwtInterceptor;
 import org.scoooting.rental.dto.common.PageResponseDTO;
 import org.scoooting.rental.dto.UpdateCoordinatesDTO;
 import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
@@ -15,6 +16,7 @@ import org.scoooting.rental.exceptions.DataNotFoundException;
 import org.scoooting.rental.mappers.RentalMapper;
 import org.scoooting.rental.repositories.RentalRepository;
 import org.scoooting.rental.repositories.RentalStatusRepository;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -47,10 +49,15 @@ public class RentalService {
      * - Prevents blocking reactive event loop threads
      * - Actual transaction logic is in startRentalBlocking()
      */
-    public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng) {
-        return Mono.fromCallable(() ->
-                startRentalBlocking(userId, transportId, startLat, startLng))
-                .subscribeOn(Schedulers.boundedElastic());
+    public Mono<RentalResponseDTO> startRental(Long userId, Long transportId, Double startLat, Double startLng, String authToken) {
+        return Mono.fromCallable(() -> {
+            FeignJwtInterceptor.setAuthToken(authToken);
+            try {
+                return startRentalBlocking(userId, transportId, startLat, startLng);
+            } finally {
+                FeignJwtInterceptor.clearAuthToken();
+            }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
@@ -114,7 +121,7 @@ public class RentalService {
         }
 
         // Validate user exists
-        feignUserClient.getUserById(userId);
+        feignUserClient.getCurrentUser();
 
         // Validate transport
         transportClient.getTransport(transportId);
@@ -140,9 +147,15 @@ public class RentalService {
     /**
      * End rental (reactive wrapper).
      */
-    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng) {
-        return Mono.fromCallable(() -> endRentalBlocking(userId, endLat, endLng))
-                .subscribeOn(Schedulers.boundedElastic());
+    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng, String authToken) {
+        return Mono.fromCallable(() -> {
+            FeignJwtInterceptor.setAuthToken(authToken);
+            try {
+                return endRentalBlocking(userId, endLat, endLng);
+            } finally {
+                FeignJwtInterceptor.clearAuthToken();
+            }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
@@ -240,7 +253,7 @@ public class RentalService {
         transportClient.updateTransportCoordinates(new UpdateCoordinatesDTO(transport.id(), endLat, endLng));
 
         // Award bonus points
-        UserResponseDTO user = feignUserClient.getUserById(userId).getBody();
+        UserResponseDTO user = feignUserClient.getCurrentUser().getBody();
         feignUserClient.updateUser(userId, new UpdateUserRequestDTO(null, null,
                 user.bonuses() + (int) minutes));
 
@@ -250,10 +263,18 @@ public class RentalService {
     /**
      * Cancel active rental (reactive wrapper).
      */
-    public Mono<Void> cancelRental(Long userId) {
-        return Mono.fromRunnable(() -> cancelRentalBlocking(userId))
-                .subscribeOn(Schedulers.boundedElastic())
-                .then();
+    public Mono<Void> cancelRental(Long userId, String authToken) {
+        return Mono.fromCallable(() -> {
+                FeignJwtInterceptor.setAuthToken(authToken);
+                try {
+                    cancelRentalBlocking(userId);
+                    return null;
+                } finally {
+                    FeignJwtInterceptor.clearAuthToken();
+                }
+            })
+            .subscribeOn(Schedulers.boundedElastic())
+            .then();
     }
 
     /**
@@ -418,9 +439,15 @@ public class RentalService {
      * - System issue (app crash, payment failure)
      * - Emergency (transport stolen, dangerous situation)
      */
-    public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng) {
-        return Mono.fromCallable(() -> forceEndRentalBlocking(rentalId, endLat, endLng))
-                .subscribeOn(Schedulers.boundedElastic());
+    public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng, String authToken) {
+        return Mono.fromCallable(() -> {
+            FeignJwtInterceptor.setAuthToken(authToken);
+            try {
+                return forceEndRentalBlocking(rentalId, endLat, endLng);
+            } finally {
+                FeignJwtInterceptor.clearAuthToken();
+            }
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
     /**

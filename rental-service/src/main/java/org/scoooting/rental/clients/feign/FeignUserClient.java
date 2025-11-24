@@ -16,6 +16,9 @@ public interface FeignUserClient {
     @GetMapping("/user/{id}")
     ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id);
 
+    @GetMapping("/users/me")
+    ResponseEntity<UserResponseDTO> getCurrentUser();
+
     @PutMapping("/update-user/{id}")
     ResponseEntity<UserResponseDTO> updateUser(
             @PathVariable Long id,

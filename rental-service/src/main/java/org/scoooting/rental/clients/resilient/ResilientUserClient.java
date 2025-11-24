@@ -20,6 +20,30 @@ public class ResilientUserClient {
 
     private final FeignUserClient userServiceApi;
 
+    // Для валидации СЕБЯ (USER может вызвать /me)
+    @CircuitBreaker(name = "userService", fallbackMethod = "getCurrentUserFallback")
+    public ResponseEntity<UserResponseDTO> getCurrentUser() {
+        log.debug("Calling user-service /me");
+        try {
+            return userServiceApi.getCurrentUser();
+        } catch (FeignException.NotFound e) {
+            log.error("Current user not found in user-service");
+            throw new UserNotFoundException("Current user not found");
+        } catch (FeignException e) {
+            log.error("User service unavailable: {}", e.getMessage());
+            throw new UserServiceException("User service is currently unavailable");
+        }
+    }
+
+    public ResponseEntity<UserResponseDTO> getCurrentUserFallback(Throwable t) {
+        log.error("FALLBACK getCurrentUser! error: {}", t.getClass().getSimpleName());
+        if (t instanceof UserNotFoundException) {
+            throw (UserNotFoundException) t;
+        }
+        throw new UserServiceException("User service unavailable", t);
+    }
+
+    // Для валидации ДРУГОГО пользователя (только SUPPORT/ANALYST/ADMIN)
     @CircuitBreaker(name = "userService", fallbackMethod = "getUserByIdFallback")
     public ResponseEntity<UserResponseDTO> getUserById(Long id) {
         log.debug("Calling user-service for userId: {}", id);
@@ -31,19 +55,14 @@ public class ResilientUserClient {
         } catch (FeignException e) {
             log.error("User service unavailable: {}", e.getMessage());
             throw new UserServiceException("User service is currently unavailable");
-        }    }
+        }
+    }
 
     public ResponseEntity<UserResponseDTO> getUserByIdFallback(Long id, Throwable t) {
         log.error("FALLBACK getUserById! userId: {}, error: {}", id, t.getClass().getSimpleName());
-
         if (t instanceof UserNotFoundException) {
             throw (UserNotFoundException) t;
         }
-
-        if (t instanceof UserServiceException) {
-            throw (UserServiceException) t;
-        }
-
         throw new UserServiceException("User service unavailable", t);
     }
 
@@ -56,15 +75,15 @@ public class ResilientUserClient {
             throw new UserNotFoundException("User with ID " + id + " not found");
         } catch (FeignException e) {
             throw new UserServiceException("User service is currently unavailable");
-        }    }
+        }
+    }
 
     public ResponseEntity<UserResponseDTO> updateUserFallback(Long id, UpdateUserRequestDTO request, Throwable t) {
         log.error("FALLBACK updateUser! userId: {}, error: {}", id, t.getClass().getSimpleName());
-
-        if (!(t instanceof UserServiceException && t.getMessage().contains("not found"))) {
-            throw new UserServiceException("User service unavailable", t);
+        if (t instanceof UserNotFoundException) {
+            throw (UserNotFoundException) t;
         }
-        throw (UserServiceException) t;
+        throw new UserServiceException("User service unavailable", t);
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "getIdByCityFallback")
@@ -79,10 +98,9 @@ public class ResilientUserClient {
 
     public ResponseEntity<Long> getIdByCityFallback(String name, Throwable t) {
         log.error("FALLBACK getIdByCity! city: {}, error: {}", name, t.getClass().getSimpleName());
-
-        if (!(t instanceof UserServiceException && t.getMessage().contains("not found"))) {
-            throw new UserServiceException("User service unavailable", t);
+        if (t instanceof UserServiceException && t.getMessage().contains("not found")) {
+            throw (UserServiceException) t;
         }
-        throw (UserServiceException) t;
+        throw new UserServiceException("User service unavailable", t);
     }
 }

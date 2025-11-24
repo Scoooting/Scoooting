@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -40,15 +41,19 @@ public class RentalController {
     @PostMapping("/start")
     public Mono<ResponseEntity<RentalResponseDTO>> startRental(
             @Valid @RequestBody StartRentalRequestDTO request,
-            @AuthenticationPrincipal UserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal,
+            ServerWebExchange exchange
     ) {
         log.info("User {} starting rental for transport {}", principal.getUserId(), request.transportId());
+
+        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
 
         return rentalService.startRental(
                 principal.getUserId(),
                 request.transportId(),
                 request.startLatitude(),
-                request.startLongitude()
+                request.startLongitude(),
+                authToken
         ).map(rental -> ResponseEntity.status(HttpStatus.CREATED).body(rental));
     }
 
@@ -60,14 +65,18 @@ public class RentalController {
     @PostMapping("/end")
     public Mono<ResponseEntity<RentalResponseDTO>> endRental(
             @Valid @RequestBody EndRentalRequestDTO request,
-            @AuthenticationPrincipal UserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal,
+            ServerWebExchange exchange
     ) {
         log.info("User {} ending their rental", principal.getUserId());
+
+        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
 
         return rentalService.endRental(
                 principal.getUserId(),
                 request.endLatitude(),
-                request.endLongitude()
+                request.endLongitude(),
+                authToken
         ).map(ResponseEntity::ok);
     }
 
@@ -78,11 +87,14 @@ public class RentalController {
     )
     @PostMapping("/cancel")
     public Mono<ResponseEntity<Void>> cancelRental(
-            @AuthenticationPrincipal UserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal,
+            ServerWebExchange exchange
     ) {
         log.info("User {} cancelling their rental", principal.getUserId());
 
-        return rentalService.cancelRental(principal.getUserId())
+        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
+
+        return rentalService.cancelRental(principal.getUserId(), authToken)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 
@@ -131,13 +143,15 @@ public class RentalController {
             @PathVariable Long rentalId,
             @RequestParam Double endLatitude,
             @RequestParam Double endLongitude,
-            @AuthenticationPrincipal UserPrincipal principal
+            @AuthenticationPrincipal UserPrincipal principal,
+            ServerWebExchange exchange
     ) {
         log.info("Support {} force-ending rental {}", principal.getEmail(), rentalId);
 
-        return rentalService.forceEndRental(rentalId, endLatitude, endLongitude)
-                .map(ResponseEntity::ok);
-    }
+        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
+
+        return rentalService.forceEndRental(rentalId, endLatitude, endLongitude, authToken)
+                .map(ResponseEntity::ok);    }
 
     // ==================== ANALYST OPERATIONS ====================
 

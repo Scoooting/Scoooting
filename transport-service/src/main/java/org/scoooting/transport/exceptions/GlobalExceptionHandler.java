@@ -1,9 +1,12 @@
 package org.scoooting.transport.exceptions;
 
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.scoooting.transport.dto.common.ErrorResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     /**
@@ -102,6 +106,36 @@ public class GlobalExceptionHandler {
         );
 
         return Mono.just(ResponseEntity.badRequest().body(error));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleAccessDenied(
+            AccessDeniedException ex,
+            ServerWebExchange exchange
+    ) {
+        log.error("Access denied: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Access denied. You don't have permission to access this resource.",
+                "ACCESS_DENIED",
+                LocalDateTime.now(),
+                Map.of("path", exchange.getRequest().getPath().value())
+        );
+        return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).body(error));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public Mono<ResponseEntity<ErrorResponseDTO>> handleAuthentication(
+            AuthenticationException ex,
+            ServerWebExchange exchange
+    ) {
+        log.error("Authentication failed: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Authentication failed. Please log in.",
+                "AUTHENTICATION_FAILED",
+                LocalDateTime.now(),
+                Map.of("path", exchange.getRequest().getPath().value())
+        );
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error));
     }
 
     /**
