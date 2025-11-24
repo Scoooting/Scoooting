@@ -127,4 +127,14 @@ class RentalServiceApplicationTests {
         StepVerifier.create(rentalService.getUserRentalHistory(1L, 0, 50))
                 .assertNext(page -> assertEquals(rentals, page.content().size())).verifyComplete();
     }
+
+    @Test
+    void startAndForceEndRental() {
+        RentalResponseDTO responseDTO = rentalService.startRental(1L, 1L, lat, lon).block();
+        rentalService.forceEndRental(responseDTO.userId(), lat, lon).block();
+        Rental rental = rentalRepository.findById(responseDTO.id()).orElseThrow();
+
+        RentalStatus status = rentalStatusRepository.findByName("COMPLETED").orElseThrow();
+        assertEquals(status.getId(), rental.getStatusId());
+    }
 }

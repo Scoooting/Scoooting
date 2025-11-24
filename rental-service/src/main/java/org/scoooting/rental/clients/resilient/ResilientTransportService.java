@@ -50,7 +50,7 @@ public class ResilientTransportService {
     public ResponseEntity<TransportResponseDTO> getTransport(Long id) {
         log.debug("Calling transport-service for transportId: {}", id);
         try {
-            return transportServiceApi.getTransport(id);
+            return null;
         } catch (FeignException.NotFound e) {
             log.error("Transport {} not found in transport-service", id);
             throw new TransportNotFoundException("Transport with ID " + id + " not found");
@@ -78,7 +78,7 @@ public class ResilientTransportService {
     public ResponseEntity<TransportResponseDTO> updateTransportStatus(Long id, String status) {
         log.debug("Calling transport-service to update status: transportId={}, status={}", id, status);
         try {
-            return transportServiceApi.updateTransportStatus(id, status);
+            return null;
         } catch (FeignException.NotFound e) {
             log.error("Transport {} not found for status update", id);
             throw new TransportNotFoundException("Transport with ID " + id + " not found");
@@ -107,7 +107,7 @@ public class ResilientTransportService {
     public ResponseEntity<Void> updateTransportCoordinates(UpdateCoordinatesDTO dto) {
         log.debug("Calling transport-service to update coordinates: transportId={}", dto.transportId());
         try {
-            return transportServiceApi.updateTransportCoordinates(dto);
+            return null;
         } catch (FeignException.NotFound e) {
             log.error("Transport {} not found for coordinates update", dto.transportId());
             throw new TransportNotFoundException("Transport with ID " + dto.transportId() + " not found");

@@ -2,6 +2,11 @@ spring:
   application:
     name: transport_service_test
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/transports_db
+    username: postgres
+    password: postgres_pass
+
   sql:
     init:
       mode: always

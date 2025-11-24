@@ -1,13 +1,13 @@
-//package org.scoooting.transport.config;
-//
-//import org.flywaydb.core.Flyway;
-//import org.springframework.beans.factory.annotation.Value;
-//import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//
+package org.scoooting.transport.config;
+
+import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 //@Configuration
-//public class FlywayConfig {
+public class FlywayConfig {
 //
 //    @Value("${spring.datasource.url}")
 //    private String datasourceUrl;
@@ -26,4 +26,4 @@
 //                .baselineOnMigrate(true)
 //                .load();
 //    }
-//}
+}

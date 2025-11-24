@@ -132,14 +132,11 @@ public class RentalController {
             @PathVariable Long rentalId,
             @RequestParam Double endLatitude,
             @RequestParam Double endLongitude,
-            @AuthenticationPrincipal UserPrincipal principal,
-            ServerWebExchange exchange
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Support {} force-ending rental {}", principal.getEmail(), rentalId);
 
-        String authToken = exchange.getRequest().getHeaders().getFirst("Authorization");
-
-        return rentalService.forceEndRental(rentalId, endLatitude, endLongitude, authToken)
+        return rentalService.forceEndRental(rentalId, endLatitude, endLongitude)
                 .map(ResponseEntity::ok);    }
 
     // ==================== ANALYST OPERATIONS ====================

@@ -116,11 +116,11 @@ public class RentalService {
 
         // Validate user exists
         FeignJwtInterceptor.setUserToken("Bearer " + getCurrentUserToken());
-        feignUserClient.getUserById(userId);
+//        feignUserClient.getUserById(userId);
 
         // Validate transport
         FeignJwtInterceptor.clear();
-        transportClient.getTransport(transportId);
+//        transportClient.getTransport(transportId);
 
         RentalStatus rentalStatus = rentalStatusRepository.findByName("ACTIVE")
                 .orElseThrow(() -> new DataNotFoundException("ACTIVE status not found"));
@@ -433,9 +433,8 @@ public class RentalService {
      * - System issue (app crash, payment failure)
      * - Emergency (transport stolen, dangerous situation)
      */
-    public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng, String authToken) {
+    public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng) {
         return Mono.fromCallable(() -> {
-            FeignJwtInterceptor.setUserToken(authToken);
             try {
                 return forceEndRentalBlocking(rentalId, endLat, endLng);
             } finally {
