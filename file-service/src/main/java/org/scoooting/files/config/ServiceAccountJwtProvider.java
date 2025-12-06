@@ -1,4 +1,4 @@
-package org.scoooting.rental.config;
+package org.scoooting.files.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

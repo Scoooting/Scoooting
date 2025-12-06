@@ -1,6 +1,7 @@
 **/.gradle
 **/.idea
 **/build
+photos
 **/*.iml
 **/application-local.yml
 **/*.env
