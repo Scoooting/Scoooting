@@ -1,0 +1,32 @@
+package org.scoooting.files;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+import java.util.List;
+
+@SpringBootApplication
+public class FileServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(FileServiceApplication.class, args);
+    }
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI().servers(List.of(new Server().url("/"))) // TODO заменить / на /file-service
+                .components(new Components()
+                        .addSecuritySchemes("Bearer-jwt",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")))
+                .addSecurityItem(new SecurityRequirement().addList("Bearer-jwt"));
+    }
+}

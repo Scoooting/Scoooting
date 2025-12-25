@@ -3,6 +3,7 @@ package org.scoooting.transport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
 import org.scoooting.transport.dto.response.TransportResponseDTO;
@@ -113,17 +114,34 @@ class TransportServiceApplicationTests {
     void getTransportByIdNotFoundTest() {
         StepVerifier.create(transportService.getTransportById(-1L))
                 .expectErrorMatches(throwable ->
-                        throwable instanceof TransportNotFoundException &&
-                        throwable.getMessage().equals("Transport not found")
+                        throwable instanceof IllegalArgumentException &&
+                                throwable.getMessage().equals("Transport ID must be positive")
                 )
                 .verify();
     }
 
     @ParameterizedTest
     @EnumSource(TransportType.class)
-    void findAvailableTransportsByTypeTest(TransportType type) {
-        StepVerifier.create(transportService.findAvailableTransportsByType(type))
-                .expectNextCount(1)
+    void scrollAvailableTransportsByTypeTest(TransportType type) {
+        int page = 0;
+        int size = 20;
+
+        StepVerifier.create(transportService.scrollAvailableTransportsByType(type, page, size))
+                .assertNext(scrollResponse -> {
+                    assertNotNull(scrollResponse);
+                    assertNotNull(scrollResponse.content());
+                    assertEquals(page, scrollResponse.page());
+                    assertEquals(size, scrollResponse.size());
+                    assertNotNull(scrollResponse.hasMore());
+
+                    // check that client isn't empty
+                    assertFalse(scrollResponse.content().isEmpty(),
+                            "Should have at least one " + type + " transport");
+
+                    // check that content size is not bigger than requested size
+                    assertTrue(scrollResponse.content().size() <= size,
+                            "Content size should not exceed requested size");
+                })
                 .verifyComplete();
     }
 
@@ -151,7 +169,7 @@ class TransportServiceApplicationTests {
         StepVerifier.create(transportService.updateTransportStatus(-1L, "IN_USE"))
                 .expectErrorMatches(throwable ->
                         throwable instanceof TransportNotFoundException &&
-                        throwable.getMessage().equals("Transport not found")
+                                throwable.getMessage().equals("Transport not found")
                 )
                 .verify();
 
@@ -159,20 +177,6 @@ class TransportServiceApplicationTests {
                 .expectErrorMatches(throwable ->
                         throwable instanceof DataNotFoundException &&
                                 throwable.getMessage().equals("Status not found")
-                )
-                .verify();
-    }
-
-    @Test
-    void getStatusIdTest() {
-        StepVerifier.create(transportService.getStatusId("IN_USE"))
-                .assertNext(statusId -> assertEquals(2, statusId))
-                .verifyComplete();
-
-        StepVerifier.create(transportService.getStatusId("HAHA"))
-                .expectErrorMatches(throwable ->
-                        throwable instanceof DataNotFoundException &&
-                        throwable.getMessage().equals("Status not found")
                 )
                 .verify();
     }
@@ -187,5 +191,22 @@ class TransportServiceApplicationTests {
                     assertEquals(50.0, updatedTransport.getLongitude());
                 })
                 .verifyComplete();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "-90.1, 50.0, 'Latitude must be between -90 and 90, got: '",
+            "90.1, 50.0, 'Latitude must be between -90 and 90, got: '",
+            "40, -180.1, 'Longitude must be between -180 and 180, got: '",
+            "40, 180.1, 'Longitude must be between -180 and 180, got: '"
+    })
+    void updateCoordinatesTestError(double lat, double lon, String message) {
+        Transport transport = transports.get(0);
+        UpdateCoordinatesDTO coordinatesDTO = new UpdateCoordinatesDTO(transport.getId(), lat, lon);
+        StepVerifier.create(transportService.updateCoordinates(coordinatesDTO))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof IllegalArgumentException &&
+                                throwable.getMessage().startsWith(message)
+                ).verify();
     }
 }

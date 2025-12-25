@@ -1,0 +1,21 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: file-service
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://config-server:8888}
+  cloud:
+    config:
+      fail-fast: false
+
+  #TODO перенести в конфиги
+  servlet:
+    multipart:
+      max-file-size: 10MB
+
+minio:
+  url: http://localhost:9000
+  access-key: app
+  secret-key: app-password

@@ -3,6 +3,8 @@ package org.scoooting.user.controllers;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.scoooting.user.dto.request.UserCreationByAdminRequestDTO;
 import org.scoooting.user.dto.request.UserRegistrationRequestDTO;
 import org.scoooting.user.dto.request.UserSignInDto;
 import org.scoooting.user.exceptions.InvalidRefreshTokenException;
@@ -11,11 +13,13 @@ import org.scoooting.user.exceptions.UserNotFoundException;
 import org.scoooting.user.services.UserService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final UserService userService;

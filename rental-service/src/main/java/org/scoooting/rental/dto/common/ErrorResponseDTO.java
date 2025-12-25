@@ -9,6 +9,5 @@ public record ErrorResponseDTO(
         @NotNull String message,
         @NotNull String code,
         @NotNull LocalDateTime timestamp,
-        String path,
         Map<String, String> details
 ) {}

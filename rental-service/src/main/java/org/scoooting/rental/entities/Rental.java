@@ -9,6 +9,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Table("rentals")
@@ -32,10 +33,10 @@ public class Rental {
 
     @NotNull
     @PastOrPresent(message = "Start time cannot be in the future")
-    private LocalDateTime startTime;
+    private Instant startTime;
 
     @Future(message = "End time must be in the future if set")
-    private LocalDateTime endTime;
+    private Instant endTime;
 
     @NotNull
     @DecimalMin(value = "-90.0")

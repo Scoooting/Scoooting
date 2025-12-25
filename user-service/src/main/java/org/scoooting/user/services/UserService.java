@@ -3,10 +3,8 @@ package org.scoooting.user.services;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.user.config.JwtService;
 import org.scoooting.user.dto.common.PageResponseDTO;
-import org.scoooting.user.dto.request.UpdateUserRequestDTO;
-import org.scoooting.user.dto.request.UserRegistrationRequestDTO;
+import org.scoooting.user.dto.request.*;
 import org.scoooting.user.dto.JwtDto;
-import org.scoooting.user.dto.request.UserSignInDto;
 import org.scoooting.user.dto.response.UserResponseDTO;
 import org.scoooting.user.entities.City;
 import org.scoooting.user.entities.RefreshToken;
@@ -42,7 +40,10 @@ public class UserService {
     private final JwtService jwtService;
 
     public String addRefreshToken(User user) {
-        JwtDto jwtDto = jwtService.generateAuthToken(user.getEmail());
+        String roleName = roleRepository.findById(user.getRoleId())
+                .map(UserRole::getName)
+                .orElse("USER");
+        JwtDto jwtDto = jwtService.generateAuthToken(user.getId(), user.getEmail(), roleName);
         Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findById(user.getId());
         if (optionalRefreshToken.isEmpty()) {
             refreshTokenRepository.insert(user.getId(), jwtDto.refreshToken());
@@ -53,6 +54,30 @@ public class UserService {
         }
 
         return jwtDto.accessToken();
+    }
+
+    public String refreshToken(String token) throws UserNotFoundException, InvalidRefreshTokenException {
+        if (token == null)
+            throw new InvalidRefreshTokenException("Invalid refresh token!");
+
+        String email = jwtService.getEmailFromToken(token);
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findById(user.getId());
+            if (optionalRefreshToken.isPresent()) {
+                RefreshToken refreshToken = optionalRefreshToken.get();
+                if (jwtService.validateJwtToken(refreshToken.getToken())) {
+                    return addRefreshToken(user);
+                }
+
+                refreshTokenRepository.delete(refreshToken);
+                throw new InvalidRefreshTokenException("Invalid refresh token!");
+            }
+        }
+
+        throw new UserNotFoundException("User not found!");
     }
 
     public String registerUser(UserRegistrationRequestDTO request) {
@@ -110,12 +135,17 @@ public class UserService {
         return toResponseDTO(user);
     }
 
+
+    /**
+     * Regular user updates own profile (only name and city)
+     */
     public UserResponseDTO updateUser(Long id, UpdateUserRequestDTO request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        if (request.name() != null) user.setName(request.name());
-        if (request.bonuses() != null) user.setBonuses(request.bonuses());
+        if (request.name() != null) {
+            user.setName(request.name());
+        }
 
         if (request.cityName() != null) {
             City city = cityRepository.findByName(request.cityName())
@@ -124,6 +154,72 @@ public class UserService {
         }
 
         user = userRepository.save(user);
+        return toResponseDTO(user);
+    }
+
+    /**
+     * Admin can update any field including role, email, bonuses
+     */
+    public UserResponseDTO adminUpdateUser(Long id, AdminUpdateUserRequestDTO request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        if (request.name() != null) {
+            user.setName(request.name());
+        }
+
+        if (request.email() != null) {
+            // Check if email is not taken by another user
+            userRepository.findByEmail(request.email()).ifPresent(existingUser -> {
+                if (!existingUser.getId().equals(id)) {
+                    throw new UserAlreadyExistsException("Email already taken");
+                }
+            });
+            user.setEmail(request.email());
+        }
+
+        if (request.bonuses() != null) {
+            user.setBonuses(request.bonuses());
+        }
+
+        if (request.cityName() != null) {
+            City city = cityRepository.findByName(request.cityName())
+                    .orElseThrow(() -> new DataNotFoundException("City not found"));
+            user.setCityId(city.getId());
+        }
+
+        if (request.roleName() != null) {
+            UserRole role = roleRepository.findByName(request.roleName())
+                    .orElseThrow(() -> new DataNotFoundException("Role not found"));
+            user.setRoleId(role.getId());
+        }
+
+        user = userRepository.save(user);
+        return toResponseDTO(user);
+    }
+
+    /**
+     * Support/Admin can add or deduct bonuses with comment for audit
+     */
+    @Transactional
+    public UserResponseDTO addBonuses(Long userId, Integer amount) {
+        if (amount == null) {
+            throw new IllegalArgumentException("Bonus amount must be non-zero");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        int currentBonuses = user.getBonuses() != null ? user.getBonuses() : 0;
+        int newBonuses = currentBonuses + amount;
+
+        if (newBonuses < 0) {
+            throw new IllegalArgumentException("Resulting bonuses cannot be negative. User has " + currentBonuses + " bonuses.");
+        }
+
+        user.setBonuses(newBonuses);
+        user = userRepository.save(user);
+
         return toResponseDTO(user);
     }
 
@@ -142,29 +238,6 @@ public class UserService {
         return userMapper.toResponseDTO(user, roleName, cityName);
     }
 
-    public String refreshToken(String token) throws UserNotFoundException, InvalidRefreshTokenException {
-        if (token == null)
-            throw new InvalidRefreshTokenException("Invalid refresh token!");
-
-        String email = jwtService.getEmailFromToken(token);
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findById(user.getId());
-            if (optionalRefreshToken.isPresent()) {
-                RefreshToken refreshToken = optionalRefreshToken.get();
-                if (jwtService.validateJwtToken(refreshToken.getToken()))
-                    return addRefreshToken(user);
-
-                refreshTokenRepository.delete(refreshToken);
-                throw new InvalidRefreshTokenException("Invalid refresh token!");
-            }
-        }
-
-        throw new UserNotFoundException("User not found!");
-    }
-
     private User findByCredentials(UserSignInDto userSignInDto) throws UserNotFoundException {
         Optional<User> optionalUser = userRepository.findByEmail(userSignInDto.email());
         if (optionalUser.isPresent()) {
@@ -174,5 +247,32 @@ public class UserService {
         }
 
         throw new UserNotFoundException("Wrong login or password!");
+    }
+
+    public String createUserWithRole(UserCreationByAdminRequestDTO request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new UserAlreadyExistsException("User with email already exists");
+        }
+
+        User user = new User();
+        user.setEmail(request.email());
+        user.setName(request.name());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+
+        // Set role from request
+        UserRole userRole = roleRepository.findByName(request.roleName())
+                .orElseThrow(() -> new DataNotFoundException(request.roleName() + " role not found"));
+        user.setRoleId(userRole.getId());
+
+        // Set city if provided
+        if (request.cityName() != null) {
+            City city = cityRepository.findByName(request.cityName())
+                    .orElseThrow(() -> new DataNotFoundException("City not found"));
+            user.setCityId(city.getId());
+        }
+
+        user.setBonuses(0);
+        user = userRepository.save(user);
+        return addRefreshToken(user);
     }
 }

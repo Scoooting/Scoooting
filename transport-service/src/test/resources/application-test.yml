@@ -2,6 +2,11 @@ spring:
   application:
     name: transport_service_test
 
+  datasource:
+    url: jdbc:postgresql://localhost:5432/transports_db
+    username: postgres
+    password: postgres_pass
+
   sql:
     init:
       mode: always
@@ -17,3 +22,8 @@ spring:
 eureka:
   client:
     enabled: false
+
+jwt:
+  secret: test
+  access-duration: ${JWT_ACCESS_DURATION:900}
+  refresh-duration: ${JWT_REFRESH_DURATION:86400}

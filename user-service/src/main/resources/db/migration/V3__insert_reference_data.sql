@@ -3,6 +3,7 @@ insert into user_roles (name) values
     ('USER'),
     ('OPERATOR'),
     ('SUPPORT'),
+    ('ANALYST'),
     ('ADMIN');
 
 insert into cities (name, center_latitude, center_longitude, radius_km) values

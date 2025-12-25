@@ -2,6 +2,8 @@ package org.scoooting.rental;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.scoooting.rental.dto.response.RentalResponseDTO;
 import org.scoooting.rental.entities.Rental;
 import org.scoooting.rental.entities.RentalStatus;
@@ -15,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
+import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
 
@@ -87,6 +90,51 @@ class RentalServiceApplicationTests {
         Rental rental = rentalRepository.findById(responseDTO.id()).orElseThrow();
 
         RentalStatus status = rentalStatusRepository.findByName("CANCELLED").orElseThrow();
+        assertEquals(status.getId(), rental.getStatusId());
+    }
+
+    @Test
+    void noActiveRentalTest() {
+        StepVerifier.create(rentalService.endRental(-1L, 0.0, 0.0))
+                .expectErrorMatches(throwable ->
+                        throwable instanceof IllegalStateException &&
+                                throwable.getMessage().startsWith("No active rental found")
+                ).verify();
+    }
+
+    @Test
+    void getActiveRentalDto() {
+        rentalService.startRental(1L, 1L, lat, lon).block();
+        StepVerifier.create(rentalService.getActiveRental(1L))
+                .assertNext(rentalDTO -> {
+                    assertAll(
+                            () -> assertEquals(1L, rentalDTO.userId()),
+                            () -> assertEquals(1L, rentalDTO.transportId()),
+                            () -> assertNull(rentalDTO.totalCost()),
+                            () -> assertNull(rentalDTO.durationMinutes())
+                    );
+                }).verifyComplete();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 4})
+    void getUserRentalHistoryTest(int rentals) {
+        for (int i = 0; i < rentals; i++) {
+            rentalService.startRental(1L, 1L, lat, lon).block();
+            rentalService.endRental(1L, lat, lon + 0.5).block();
+        }
+
+        StepVerifier.create(rentalService.getUserRentalHistory(1L, 0, 50))
+                .assertNext(page -> assertEquals(rentals, page.content().size())).verifyComplete();
+    }
+
+    @Test
+    void startAndForceEndRental() {
+        RentalResponseDTO responseDTO = rentalService.startRental(1L, 1L, lat, lon).block();
+        rentalService.forceEndRental(responseDTO.userId(), lat, lon).block();
+        Rental rental = rentalRepository.findById(responseDTO.id()).orElseThrow();
+
+        RentalStatus status = rentalStatusRepository.findByName("COMPLETED").orElseThrow();
         assertEquals(status.getId(), rental.getStatusId());
     }
 }

@@ -1,5 +1,7 @@
 package org.scoooting.user.exceptions;
 
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.scoooting.user.dto.common.ErrorResponseDTO;
 import org.scoooting.user.exceptions.common.DataNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -9,13 +11,78 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
+
+    /**
+     * Handle Spring Security Access Denied (403)
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
+            AccessDeniedException ex,
+            WebRequest request
+    ) {
+        log.error("Access denied: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Access denied. You don't have permission to access this resource.",
+                "FORBIDDEN",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                Map.of("details", "Insufficient permissions")
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    /**
+     * Handle Authentication errors (401)
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAuthenticationException(
+            AuthenticationException ex,
+            WebRequest request
+    ) {
+        log.error("Authentication failed: {}", ex.getMessage());
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Authentication required",
+                "UNAUTHORIZED",
+                LocalDateTime.now(),
+                request.getDescription(false).replace("uri=", ""),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    /**
+     * Validation errors for @RequestParam, @PathVariable
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponseDTO> handleConstraintViolation(ConstraintViolationException ex) {
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String field = violation.getPropertyPath().toString();
+            String message = violation.getMessage();
+            errors.put(field, message);
+        });
+
+        ErrorResponseDTO error = new ErrorResponseDTO(
+                "Validation failed",
+                "VALIDATION_ERROR",
+                LocalDateTime.now(),
+                errors.toString(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ErrorResponseDTO> handleInvalidRefreshToken(

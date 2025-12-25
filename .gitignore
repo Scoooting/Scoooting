@@ -1,12 +1,14 @@
 **/.gradle
 **/.idea
 **/build
+photos
 **/*.iml
 **/application-local.yml
 **/*.env
 *.env
 eureka/.env
 configs
+analytics-service
 
 **/HELP.md
 !gradle/wrapper/gradle-wrapper.jar
