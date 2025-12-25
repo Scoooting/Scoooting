@@ -20,7 +20,7 @@ public class FileServiceApplication {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        return new OpenAPI().servers(List.of(new Server().url("/"))) // TODO заменить / на /file-service
+        return new OpenAPI().servers(List.of(new Server().url("/file-service")))
                 .components(new Components()
                         .addSecuritySchemes("Bearer-jwt",
                                 new SecurityScheme()

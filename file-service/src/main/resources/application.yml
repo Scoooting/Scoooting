@@ -17,5 +17,9 @@ spring:
 
 minio:
   url: http://localhost:9000
-  access-key: app
-  secret-key: app-password
+  access-key: minio
+  secret-key: minio123
+  default-bucket: default
+  user-files-bucket: user-files
+  transport-photos: transport-photos
+  date-format: yyyy-MM-dd_HH-mm-ss
