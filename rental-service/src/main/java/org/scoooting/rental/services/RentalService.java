@@ -4,9 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.scoooting.rental.clients.resilient.ResilientTransportService;
 import org.scoooting.rental.clients.resilient.ResilientUserClient;
 import org.scoooting.rental.config.FeignJwtInterceptor;
+import org.scoooting.rental.config.UserPrincipal;
+import org.scoooting.rental.dto.ReportDataDTO;
 import org.scoooting.rental.dto.common.PageResponseDTO;
 import org.scoooting.rental.dto.UpdateCoordinatesDTO;
-import org.scoooting.rental.dto.request.UpdateUserRequestDTO;
 import org.scoooting.rental.dto.response.RentalResponseDTO;
 import org.scoooting.rental.dto.response.TransportResponseDTO;
 import org.scoooting.rental.dto.response.UserResponseDTO;
@@ -36,6 +37,7 @@ public class RentalService {
     private final ResilientUserClient feignUserClient;
     private final RentalStatusRepository rentalStatusRepository;
     private final RentalMapper rentalMapper;
+    private final KafkaService kafkaService;
 
     private static final BigDecimal BASE_RATE = new BigDecimal("0.50");
     private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00");
@@ -253,7 +255,11 @@ public class RentalService {
         UserResponseDTO user = feignUserClient.getUserById(userId).getBody();
         feignUserClient.addBonuses(userId, user.bonuses() + (int) minutes);
 
-        return rentalMapper.toResponseDTO(rental);
+        RentalResponseDTO rentalResponseDTO = rentalMapper.toResponseDTO(rental);
+        rentalResponseDTO.setTransportType(transport.type());
+        rentalResponseDTO.setStatus("Завершена");
+
+        return rentalResponseDTO;
     }
 
     /**
@@ -334,6 +340,9 @@ public class RentalService {
 
         FeignJwtInterceptor.useServiceAccount();
         transportClient.updateTransportStatus(transport.id(), "AVAILABLE");
+
+        RentalResponseDTO responseDTO = rentalMapper.toResponseDTO(rental);
+        responseDTO.setTransportType(transport.type());
     }
 
     /**
@@ -505,7 +514,9 @@ public class RentalService {
         UserResponseDTO user = feignUserClient.getUserById(rental.getUserId()).getBody();
         feignUserClient.addBonuses(rental.getUserId(),user.bonuses() + (int) minutes);
 
-        return rentalMapper.toResponseDTO(rental);
+        RentalResponseDTO responseDTO = rentalMapper.toResponseDTO(rental);
+        responseDTO.setTransportType(transport.type());
+        return responseDTO;
     }
 
     /**
@@ -570,10 +581,23 @@ public class RentalService {
     }
 
     private String getCurrentUserToken() {
-        // Token in ThreadLocal is stored here from controller
-        // We can extract from SecurityContext if needed
         return ReactiveSecurityContextHolder.getContext()
                 .map(ctx -> ctx.getAuthentication().getCredentials().toString())
                 .block();
+    }
+
+    public Mono<Void> sendReport(RentalResponseDTO rental, UserPrincipal userPrincipal) {
+        return kafkaService.sendMessage("reports-data", ReportDataDTO.builder()
+                .rentalId(rental.getId())
+                .userId(userPrincipal.getUserId())
+                .username(userPrincipal.getUsername())
+                .email(userPrincipal.getEmail())
+                .transport(rental.getTransportType())
+                .startTime(rental.getStartTime().getEpochSecond())
+                .endTime(rental.getEndTime().getEpochSecond())
+                .durationMinutes(rental.getDurationMinutes())
+                .status(rental.getStatus())
+                .totalCost(rental.getTotalCost().intValue())
+                .build());
     }
 }

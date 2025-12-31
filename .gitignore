@@ -8,7 +8,6 @@ photos
 *.env
 eureka/.env
 configs
-analytics-service
 
 **/HELP.md
 !gradle/wrapper/gradle-wrapper.jar

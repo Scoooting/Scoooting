@@ -54,14 +54,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtService.validateJwtToken(token)) {
                 log.info("UserService JwtAuthenticationFilter: Token is VALID");
 
+                String username = jwtService.getUsernameFromToken(token);
                 String email = jwtService.getEmailFromToken(token);
                 String role = jwtService.getRoleFromToken(token);
                 Long userId = jwtService.getUserIdFromToken(token);
 
-                log.info("UserService JwtAuthenticationFilter: Extracted from token - userId: {}, email: {}, role: {}",
-                        userId, email, role);
+                log.info("UserService JwtAuthenticationFilter: Extracted from token - username: {}, userId: {}, " +
+                                "email: {}, role: {}", username, userId, email, role);
 
-                UserPrincipal principal = new UserPrincipal(userId, email, role);
+                UserPrincipal principal = new UserPrincipal(username, userId, email, role);
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         principal,

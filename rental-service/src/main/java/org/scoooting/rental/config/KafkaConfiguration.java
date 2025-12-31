@@ -1,4 +1,4 @@
-package org.scoooting.rental.kafka;
+package org.scoooting.rental.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
@@ -9,6 +9,6 @@ public class KafkaConfiguration {
 
     @Bean
     public NewTopic createRentalStatsTopic() {
-        return new NewTopic("rentalStats", 1, (short) 3);
+        return new NewTopic("reports-data", 1, (short) 1);
     }
 }

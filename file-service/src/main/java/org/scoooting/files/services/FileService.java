@@ -2,15 +2,14 @@ package org.scoooting.files.services;
 
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
-import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
-import io.minio.errors.ErrorResponseException;
+import io.minio.errors.*;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.io.IOUtils;
 import org.scoooting.files.dto.request.LocalTimeDto;
 import org.scoooting.files.exceptions.FileTypeException;
 import org.scoooting.files.exceptions.MinioConnectionException;
+import org.scoooting.files.utils.FileDateFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,28 +17,34 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Service
+@Getter
 @RequiredArgsConstructor
 public class FileService {
 
-    @Value("${minio.transport-photos}")
+    @Value("${minio.paths.transport-photos}")
     private String transportPhotosPath;
+
+    @Value("${minio.buckets.user-files}")
+    private String userFilesBucket;
 
     private final MinioClient minioClient;
     private final FileDateFormat fileDateFormat;
 
+    public void uploadFile(String bucketName, InputStream is, String path, long size, String contentType) throws Exception {
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(path)
+                        .stream(is, size, -1)
+                        .contentType(contentType)
+                        .build()
+        );
+    }
     public void uploadFile(String bucketName, MultipartFile file, String path) {
         try (InputStream is = file.getInputStream()) {
-            minioClient.putObject(
-                    PutObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(path)
-                            .stream(is, file.getSize(), -1)
-                            .contentType(file.getContentType())
-                            .build()
-            );
+            uploadFile(bucketName, is, path, file.getSize(), file.getContentType());
         } catch (Exception e) {
             throw new MinioConnectionException("Minio is unavailable");
         }

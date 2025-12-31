@@ -5,15 +5,18 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.scoooting.files.config.UserPrincipal;
 import org.scoooting.files.services.FileService;
+import org.scoooting.files.services.ReportsService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 @RestController
@@ -22,11 +25,12 @@ import java.io.InputStream;
 public class FileController {
 
     private final FileService fileService;
+    private final ReportsService reportsService;
 
-    @Value("${minio.user-files-bucket}")
+    @Value("${minio.buckets.user-files}")
     private String userFilesBucket;
 
-    @Value("${minio.default-bucket}")
+    @Value("${minio.buckets.default}")
     private String defaultBucket;
 
     @PostMapping(value = "/upload-transport-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -60,5 +64,10 @@ public class FileController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header("Content-disposition", "attachment; filename=\"" + filename + "\"")
                 .body(new InputStreamResource(is));
+    }
+
+    @GetMapping("/test")
+    public ResponseEntity<Void> test()  {
+        return ResponseEntity.ok().build();
     }
 }

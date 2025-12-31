@@ -43,7 +43,7 @@ public class UserService {
         String roleName = roleRepository.findById(user.getRoleId())
                 .map(UserRole::getName)
                 .orElse("USER");
-        JwtDto jwtDto = jwtService.generateAuthToken(user.getId(), user.getEmail(), roleName);
+        JwtDto jwtDto = jwtService.generateAuthToken(user.getId(), user.getName(), user.getEmail(), roleName);
         Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findById(user.getId());
         if (optionalRefreshToken.isEmpty()) {
             refreshTokenRepository.insert(user.getId(), jwtDto.refreshToken());

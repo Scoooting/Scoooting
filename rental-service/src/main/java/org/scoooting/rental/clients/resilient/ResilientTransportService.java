@@ -50,7 +50,7 @@ public class ResilientTransportService {
     public ResponseEntity<TransportResponseDTO> getTransport(Long id) {
         log.debug("Calling transport-service for transportId: {}", id);
         try {
-            return null;
+            return transportServiceApi.getTransport(id);
         } catch (FeignException.NotFound e) {
             log.error("Transport {} not found in transport-service", id);
             throw new TransportNotFoundException("Transport with ID " + id + " not found");

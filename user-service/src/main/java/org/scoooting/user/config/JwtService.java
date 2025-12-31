@@ -30,17 +30,23 @@ public class JwtService {
     @Value("${jwt.refresh-duration}")
     private int refreshDuration;
 
-    public JwtDto generateAuthToken(Long userId, String email, String role) {
+    public JwtDto generateAuthToken(Long userId, String username, String email, String role) {
         log.info("JwtService: Generating auth tokens for userId: {}, email: {}, role: {}", userId, email, role);
         return new JwtDto(
-                generateJwtToken(userId, email, role),
+                generateJwtToken(userId, username, email, role),
                 generateRefreshToken(userId, email, role)
         );
     }
 
-    public String refreshAuthToken(Long userId, String email, String role) {
+    public String refreshAuthToken(Long userId, String username, String email, String role) {
         log.info("JwtService: Refreshing auth token for userId: {}, email: {}", userId, email);
-        return generateJwtToken(userId, email, role);
+        return generateJwtToken(userId, username, email, role);
+    }
+
+    public String getUsernameFromToken(String token) {
+        String username = getClaims(token).get("username", String.class);
+        log.debug("JwtService: Extracted username from token: {}", username);
+        return username;
     }
 
     public String getEmailFromToken(String token) {
@@ -86,7 +92,7 @@ public class JwtService {
         return false;
     }
 
-    private String generateJwtToken(Long userId, String email, String role) {
+    private String generateJwtToken(Long userId, String username, String email, String role) {
         Date date = Date.from(LocalDateTime.now()
                 .plusSeconds(accessDuration)
                 .atZone(ZoneId.systemDefault())
@@ -94,6 +100,7 @@ public class JwtService {
 
         String token = Jwts.builder()
                 .subject(email)
+                .claim("username", username)
                 .claim("userId", userId)
                 .claim("role", role)
                 .expiration(date)

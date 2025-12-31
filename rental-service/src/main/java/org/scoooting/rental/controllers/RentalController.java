@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -69,7 +72,8 @@ public class RentalController {
                 principal.getUserId(),
                 request.endLatitude(),
                 request.endLongitude()
-        ).map(ResponseEntity::ok);
+        ).flatMap(rental -> rentalService.sendReport(rental, principal)
+                .thenReturn(ResponseEntity.ok(rental)));
     }
 
     @Operation(

@@ -18,6 +18,10 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    public String getUsernameFromToken(String token) {
+        return getClaims(token).get("username", String.class);
+    }
+
     public String getEmailFromToken(String token) {
         return getClaims(token).getSubject();
     }

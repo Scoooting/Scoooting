@@ -15,11 +15,30 @@ spring:
     multipart:
       max-file-size: 10MB
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: file-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: java.util.HashMap
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
 minio:
   url: http://localhost:9000
   access-key: minio
   secret-key: minio123
-  default-bucket: default
-  user-files-bucket: user-files
-  transport-photos: transport-photos
+  buckets:
+    default: default
+    user-files: user-files
+  paths:
+    transport-photos: transport-photos
+    reports: reports
   date-format: yyyy-MM-dd_HH-mm-ss
+

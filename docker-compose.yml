@@ -1,6 +1,6 @@
 services:
   db:
-    build: ./postgres
+    build: init/postgres
     container_name: postgres_container
     environment:
       POSTGRES_USER: postgres

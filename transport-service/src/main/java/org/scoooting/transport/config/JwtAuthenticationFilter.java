@@ -32,11 +32,12 @@ public class JwtAuthenticationFilter implements WebFilter {
         String token = authHeader.substring(7);
 
         try {
+            String username = jwtService.getUsernameFromToken(token);
             String email = jwtService.getEmailFromToken(token);
             String role = jwtService.getRoleFromToken(token);
             Long userId = jwtService.getUserIdFromToken(token);
 
-            UserPrincipal principal = new UserPrincipal(userId, email, role);
+            UserPrincipal principal = new UserPrincipal(username, userId, email, role);
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     principal,
