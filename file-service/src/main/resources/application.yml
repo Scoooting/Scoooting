@@ -37,8 +37,8 @@ minio:
   buckets:
     default: default
     user-files: user-files
-  paths:
-    transport-photos: transport-photos
-    reports: reports
+  formats:
+    transport-photos: transport-photos/%d/%s.jpeg
+    reports: reports/%d/%s.pdf
   date-format: yyyy-MM-dd_HH-mm-ss
 

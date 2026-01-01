@@ -7,6 +7,8 @@ import org.openpdf.text.pdf.PdfContentByte;
 import org.openpdf.text.pdf.PdfReader;
 import org.openpdf.text.pdf.PdfStamper;
 import org.scoooting.files.dto.ReportDataDTO;
+import org.scoooting.files.exceptions.MinioException;
+import org.scoooting.files.utils.FileFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +17,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
@@ -24,15 +25,13 @@ import java.time.ZonedDateTime;
 public class ReportsService {
 
     private final FileService fileService;
-
-    @Value("${minio.paths.reports}")
-    private String reportsPath;
+    private final FileFormat fileFormat;
 
     @Value("${minio.buckets.user-files}")
     private String userFilesBucket;
 
     public void generateReport(ReportDataDTO report) {
-        try (InputStream inputStream = fileService.getFile(userFilesBucket, "reports/Отчет об аренде.pdf");
+        try (InputStream inputStream = fileService.getObject(userFilesBucket, "reports/Отчет об аренде.pdf").inputStream();
              PdfReader pdfReader = new PdfReader(inputStream);
              ByteArrayOutputStream baos = new ByteArrayOutputStream();
              PdfStamper pdfStamper = new PdfStamper(pdfReader, baos)) {
@@ -70,15 +69,14 @@ public class ReportsService {
     }
 
     private void writePdfToMinio(Long userId, Long time, byte[] bytes) {
-        String reportName = String.format("%s/%s/scoooting-rental-report-%s.pdf",reportsPath, userId,
-                fileService.getFileDateFormat().getStringFormat(time));
+        String reportName = fileFormat.getFilenameWithTime(fileFormat.getReportsFormat(), userId, time);
 
         InputStream resultInputStream = new ByteArrayInputStream(bytes);
         try {
-            fileService.uploadFile(fileService.getUserFilesBucket(), resultInputStream, reportName, bytes.length,
+            fileService.uploadObject(fileService.getUserFilesBucket(), resultInputStream, reportName, bytes.length,
                     "application/pdf");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new MinioException(e.getMessage());
         }
     }
 

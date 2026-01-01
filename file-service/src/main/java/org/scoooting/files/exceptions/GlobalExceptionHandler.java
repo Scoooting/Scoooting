@@ -7,17 +7,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(MinioConnectionException.class)
-    public ResponseEntity<ErrorResponseDTO> minioConnectionException(
-            MinioConnectionException ex
+    @ExceptionHandler(MinioException.class)
+    public ResponseEntity<ErrorResponseDTO> minioException(
+            MinioException ex
     ) {
         log.error(ex.getMessage());
         ErrorResponseDTO error = new ErrorResponseDTO(
