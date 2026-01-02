@@ -88,6 +88,7 @@ public class RentalController {
         log.info("User {} cancelling their rental", principal.getUserId());
 
         return rentalService.cancelRental(principal.getUserId())
+                .flatMap(rental -> rentalService.sendReport(rental, principal))
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 

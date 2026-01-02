@@ -148,9 +148,7 @@ public class RentalService {
      * End rental (reactive wrapper).
      */
     public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng) {
-        return Mono.fromCallable(() -> {
-            return endRentalBlocking(userId, endLat, endLng);
-        }).subscribeOn(Schedulers.boundedElastic());
+        return Mono.fromCallable(() -> endRentalBlocking(userId, endLat, endLng)).subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
@@ -265,13 +263,8 @@ public class RentalService {
     /**
      * Cancel active rental (reactive wrapper).
      */
-    public Mono<Void> cancelRental(Long userId) {
-        return Mono.fromCallable(() -> {
-                    cancelRentalBlocking(userId);
-                    return null;
-                })
-            .subscribeOn(Schedulers.boundedElastic())
-            .then();
+    public Mono<RentalResponseDTO> cancelRental(Long userId) {
+        return Mono.fromCallable(() -> cancelRentalBlocking(userId)).subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
@@ -318,7 +311,7 @@ public class RentalService {
      * @throws IllegalStateException if no active rental or already ended
      */
     @Transactional
-    protected void cancelRentalBlocking(Long userId) {
+    protected RentalResponseDTO cancelRentalBlocking(Long userId) {
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found"));
 
@@ -332,6 +325,8 @@ public class RentalService {
                 .orElseThrow(() -> new DataNotFoundException("CANCELLED status not found"));
         rental.setStatusId(cancelledStatus.getId());
         rental.setEndTime(Instant.now());
+        rental.setDurationMinutes(0);
+        rental.setTotalCost(BigDecimal.valueOf(0));
         rentalRepository.save(rental);
 
         // Free transport
@@ -341,8 +336,11 @@ public class RentalService {
         FeignJwtInterceptor.useServiceAccount();
         transportClient.updateTransportStatus(transport.id(), "AVAILABLE");
 
-        RentalResponseDTO responseDTO = rentalMapper.toResponseDTO(rental);
-        responseDTO.setTransportType(transport.type());
+        RentalResponseDTO rentalResponseDTO = rentalMapper.toResponseDTO(rental);
+        rentalResponseDTO.setTransportType(transport.type());
+        rentalResponseDTO.setStatus("Отменена");
+
+        return rentalResponseDTO;
     }
 
     /**
@@ -514,9 +512,12 @@ public class RentalService {
         UserResponseDTO user = feignUserClient.getUserById(rental.getUserId()).getBody();
         feignUserClient.addBonuses(rental.getUserId(),user.bonuses() + (int) minutes);
 
-        RentalResponseDTO responseDTO = rentalMapper.toResponseDTO(rental);
-        responseDTO.setTransportType(transport.type());
-        return responseDTO;
+        RentalResponseDTO rentalResponseDTO = rentalMapper.toResponseDTO(rental);
+        rentalResponseDTO.setTransportType(transport.type());
+        rentalResponseDTO.setStatus("Принудительно завершена");
+
+        sendReport(rentalResponseDTO, new UserPrincipal(user.name(), user.id(), user.email(), user.role())).block();
+        return rentalResponseDTO;
     }
 
     /**
@@ -587,17 +588,6 @@ public class RentalService {
     }
 
     public Mono<Void> sendReport(RentalResponseDTO rental, UserPrincipal userPrincipal) {
-        return kafkaService.sendMessage("reports-data", ReportDataDTO.builder()
-                .rentalId(rental.getId())
-                .userId(userPrincipal.getUserId())
-                .username(userPrincipal.getUsername())
-                .email(userPrincipal.getEmail())
-                .transport(rental.getTransportType())
-                .startTime(rental.getStartTime().getEpochSecond())
-                .endTime(rental.getEndTime().getEpochSecond())
-                .durationMinutes(rental.getDurationMinutes())
-                .status(rental.getStatus())
-                .totalCost(rental.getTotalCost().intValue())
-                .build());
+        return kafkaService.sendReport(rental, userPrincipal);
     }
 }

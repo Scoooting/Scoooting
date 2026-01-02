@@ -91,7 +91,7 @@ public class ReportsService {
 
     private String getTimeString(Long epochSeconds) {
         Instant instant = Instant.ofEpochSecond(epochSeconds);
-        ZonedDateTime dateTime = instant.atZone(ZoneId.of("UTC"));
+        ZonedDateTime dateTime = instant.atZone(ZoneId.systemDefault());
 
         String date = String.format("%02d.%02d.%d", dateTime.getDayOfMonth(), dateTime.getMonthValue(), dateTime.getYear());
         String time = String.format("%02d:%02d:%02d", dateTime.getHour(), dateTime.getMinute(), dateTime.getSecond());
