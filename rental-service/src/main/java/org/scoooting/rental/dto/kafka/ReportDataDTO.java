@@ -1,4 +1,4 @@
-package org.scoooting.rental.dto;
+package org.scoooting.rental.dto.kafka;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

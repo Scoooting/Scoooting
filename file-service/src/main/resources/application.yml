@@ -10,35 +10,3 @@ spring:
     config:
       fail-fast: false
 
-  #TODO перенести в конфиги
-  servlet:
-    multipart:
-      max-file-size: 10MB
-
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: file-service
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.value.default.type: java.util.HashMap
-        spring.json.trusted.packages: "*"
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.add.type.headers: false
-
-minio:
-  url: http://localhost:9000
-  access-key: minio
-  secret-key: minio123
-  buckets:
-    default: default
-    user-files: user-files
-  formats:
-    transport-photos: transport-photos/%d/%s.jpeg
-    reports: reports/%d/%s.pdf
-  date-format: yyyy-MM-dd_HH-mm-ss
-

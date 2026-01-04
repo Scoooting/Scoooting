@@ -1,7 +1,6 @@
 package org.scoooting.rental.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.scoooting.rental.config.UserPrincipal;
 import org.scoooting.rental.dto.common.PageResponseDTO;
+import org.scoooting.rental.dto.kafka.RentalEventDto;
 import org.scoooting.rental.dto.request.EndRentalRequestDTO;
 import org.scoooting.rental.dto.request.StartRentalRequestDTO;
 import org.scoooting.rental.dto.response.RentalResponseDTO;
@@ -19,11 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
-import java.math.BigDecimal;
-import java.time.Instant;
 
 @Slf4j
 @RestController
@@ -53,7 +49,10 @@ public class RentalController {
                 request.transportId(),
                 request.startLatitude(),
                 request.startLongitude()
-        ).map(rental -> ResponseEntity.status(HttpStatus.CREATED).body(rental));
+        ).flatMap(rental -> rentalService.sendNotification(new RentalEventDto(
+                principal.getUserId(),
+                RentalEventDto.RentalType.START))
+                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(rental)));
     }
 
     @Operation(
@@ -72,7 +71,12 @@ public class RentalController {
                 principal.getUserId(),
                 request.endLatitude(),
                 request.endLongitude()
-        ).flatMap(rental -> rentalService.sendReport(rental, principal)
+        ).flatMap(rental ->
+                rentalService.sendReport(rental, principal)
+                        .then(rentalService.sendNotification(new RentalEventDto(
+                                principal.getUserId(),
+                                RentalEventDto.RentalType.END)
+                ))
                 .thenReturn(ResponseEntity.ok(rental)));
     }
 
@@ -88,8 +92,13 @@ public class RentalController {
         log.info("User {} cancelling their rental", principal.getUserId());
 
         return rentalService.cancelRental(principal.getUserId())
-                .flatMap(rental -> rentalService.sendReport(rental, principal))
-                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
+                .flatMap(rental ->
+                        rentalService.sendReport(rental, principal)
+                                .then(rentalService.sendNotification(new RentalEventDto(
+                                        principal.getUserId(),
+                                        RentalEventDto.RentalType.CANCEL)
+                                ))
+                                .thenReturn(ResponseEntity.ok().build()));
     }
 
     @Operation(
@@ -141,9 +150,15 @@ public class RentalController {
     ) {
         log.info("Support {} force-ending rental {}", principal.getEmail(), rentalId);
 
-        return rentalService.forceEndRental(rentalId, endLatitude, endLongitude)
-                .map(ResponseEntity::ok);    }
-
+        return rentalService.forceEndRental(principal.getUserId(), endLatitude, endLongitude)
+                .flatMap(rental ->
+                        rentalService.sendReport(rental.rentalResponseDTO(), principal)
+                                .then(rentalService.sendNotification(new RentalEventDto(
+                                        principal.getUserId(),
+                                        RentalEventDto.RentalType.FORCE_END)
+                                ))
+                                .thenReturn(ResponseEntity.ok().build()));
+    }
     // ==================== ANALYST OPERATIONS ====================
 
     @Operation(

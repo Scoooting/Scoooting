@@ -2,14 +2,11 @@ package org.scoooting.rental.services;
 
 import lombok.RequiredArgsConstructor;
 import org.scoooting.rental.config.UserPrincipal;
-import org.scoooting.rental.dto.ReportDataDTO;
+import org.scoooting.rental.dto.kafka.ReportDataDTO;
 import org.scoooting.rental.dto.response.RentalResponseDTO;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor

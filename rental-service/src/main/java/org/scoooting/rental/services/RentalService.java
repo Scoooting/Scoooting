@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.scoooting.rental.clients.resilient.ResilientTransportService;
 import org.scoooting.rental.clients.resilient.ResilientUserClient;
 import org.scoooting.rental.config.FeignJwtInterceptor;
+import org.scoooting.rental.config.KafkaConfig;
 import org.scoooting.rental.config.UserPrincipal;
-import org.scoooting.rental.dto.ReportDataDTO;
 import org.scoooting.rental.dto.common.PageResponseDTO;
 import org.scoooting.rental.dto.UpdateCoordinatesDTO;
+import org.scoooting.rental.dto.kafka.ForceEndRentalDto;
+import org.scoooting.rental.dto.kafka.RentalEventDto;
 import org.scoooting.rental.dto.response.RentalResponseDTO;
 import org.scoooting.rental.dto.response.TransportResponseDTO;
 import org.scoooting.rental.dto.response.UserResponseDTO;
@@ -440,14 +442,9 @@ public class RentalService {
      * - System issue (app crash, payment failure)
      * - Emergency (transport stolen, dangerous situation)
      */
-    public Mono<RentalResponseDTO> forceEndRental(Long rentalId, Double endLat, Double endLng) {
-        return Mono.fromCallable(() -> {
-            try {
-                return forceEndRentalBlocking(rentalId, endLat, endLng);
-            } finally {
-                FeignJwtInterceptor.clear();
-            }
-        }).subscribeOn(Schedulers.boundedElastic());
+    public Mono<ForceEndRentalDto> forceEndRental(Long rentalId, Double endLat, Double endLng) {
+        return Mono.fromCallable(() -> forceEndRentalBlocking(rentalId, endLat, endLng))
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     /**
@@ -467,7 +464,7 @@ public class RentalService {
      * @throws IllegalStateException if rental already ended
      */
     @Transactional
-    protected RentalResponseDTO forceEndRentalBlocking(Long rentalId, Double endLat, Double endLng) {
+    protected ForceEndRentalDto forceEndRentalBlocking(Long rentalId, Double endLat, Double endLng) {
         // Find rental by ID
         Rental rental = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new DataNotFoundException("Rental not found"));
@@ -516,8 +513,7 @@ public class RentalService {
         rentalResponseDTO.setTransportType(transport.type());
         rentalResponseDTO.setStatus("Принудительно завершена");
 
-        sendReport(rentalResponseDTO, new UserPrincipal(user.name(), user.id(), user.email(), user.role())).block();
-        return rentalResponseDTO;
+        return new ForceEndRentalDto(rentalResponseDTO, new UserPrincipal(user.name(), user.id(), user.email(), user.role()));
     }
 
     /**
@@ -589,5 +585,9 @@ public class RentalService {
 
     public Mono<Void> sendReport(RentalResponseDTO rental, UserPrincipal userPrincipal) {
         return kafkaService.sendReport(rental, userPrincipal);
+    }
+
+    public Mono<Void> sendNotification(RentalEventDto rentalEventDto) {
+        return kafkaService.sendMessage(KafkaConfig.RENTAL_EVENTS_TOPIC, rentalEventDto);
     }
 }
