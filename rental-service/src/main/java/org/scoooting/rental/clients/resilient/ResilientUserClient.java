@@ -77,7 +77,7 @@ public class ResilientUserClient {
         }
     }
 
-    public ResponseEntity<UserResponseDTO> addBonusesFallback(Long id, UpdateUserRequestDTO request, Throwable t) {
+    public ResponseEntity<UserResponseDTO> addBonusesFallback(Long id, Integer bonuses, Throwable t) {
         log.error("FALLBACK addBonuses! userId: {}, error: {}", id, t.getClass().getSimpleName());
         if (t instanceof UserNotFoundException) {
             throw (UserNotFoundException) t;

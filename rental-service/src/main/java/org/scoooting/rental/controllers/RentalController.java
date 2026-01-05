@@ -150,11 +150,11 @@ public class RentalController {
     ) {
         log.info("Support {} force-ending rental {}", principal.getEmail(), rentalId);
 
-        return rentalService.forceEndRental(principal.getUserId(), endLatitude, endLongitude)
+        return rentalService.forceEndRental(rentalId, endLatitude, endLongitude)
                 .flatMap(rental ->
-                        rentalService.sendReport(rental.rentalResponseDTO(), principal)
+                        rentalService.sendReport(rental.rentalResponseDTO(), rental.userPrincipal())
                                 .then(rentalService.sendNotification(new RentalEventDto(
-                                        principal.getUserId(),
+                                        rental.userPrincipal().getUserId(),
                                         RentalEventDto.RentalType.FORCE_END)
                                 ))
                                 .thenReturn(ResponseEntity.ok().build()));

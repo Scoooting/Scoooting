@@ -50,4 +50,9 @@ public class KafkaConfig {
     public NewTopic createTransportBatteryTopic() {
         return new NewTopic("transport-battery", 1, (short) 1);
     }
+
+    @Bean
+    public NewTopic createEndRentalTopic() {
+        return new NewTopic("end-rental", 1, (short) 1);
+    }
 }

@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class KafkaService {
+public class KafkaSender {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

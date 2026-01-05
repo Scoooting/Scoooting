@@ -39,7 +39,7 @@ public class RentalService {
     private final ResilientUserClient feignUserClient;
     private final RentalStatusRepository rentalStatusRepository;
     private final RentalMapper rentalMapper;
-    private final KafkaService kafkaService;
+    private final KafkaSender kafkaSender;
 
     private static final BigDecimal BASE_RATE = new BigDecimal("0.50");
     private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00");
@@ -584,10 +584,10 @@ public class RentalService {
     }
 
     public Mono<Void> sendReport(RentalResponseDTO rental, UserPrincipal userPrincipal) {
-        return kafkaService.sendReport(rental, userPrincipal);
+        return kafkaSender.sendReport(rental, userPrincipal);
     }
 
     public Mono<Void> sendNotification(RentalEventDto rentalEventDto) {
-        return kafkaService.sendMessage(KafkaConfig.RENTAL_EVENTS_TOPIC, rentalEventDto);
+        return kafkaSender.sendMessage(KafkaConfig.RENTAL_EVENTS_TOPIC, rentalEventDto);
     }
 }
