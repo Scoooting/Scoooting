@@ -17,7 +17,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Transport {
+public class TransportEntity {
 
     @Id
     private Long id;

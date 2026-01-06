@@ -1,4 +1,4 @@
-package org.scoooting.transport.entities.enums;
+package org.scoooting.transport.domain.model.enums;
 
 public enum TransportType {
     ELECTRIC_KICK_SCOOTER, // "🛴"

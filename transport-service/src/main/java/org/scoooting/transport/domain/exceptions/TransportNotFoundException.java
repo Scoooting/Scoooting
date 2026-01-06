@@ -1,4 +1,4 @@
-package org.scoooting.transport.exceptions;
+package org.scoooting.transport.domain.exceptions;
 
 public class TransportNotFoundException extends RuntimeException {
     public TransportNotFoundException(String message) {

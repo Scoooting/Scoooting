@@ -1,4 +1,4 @@
-package org.scoooting.transport.config;
+package org.scoooting.user.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -18,9 +18,6 @@ import java.util.Map;
 @Configuration
 @EnableKafka
 public class KafkaConfig {
-
-    public static final String TRANSPORT_BATTERY = "transport-battery";
-    public static final String END_RENTAL = "end-rental";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String server;
@@ -47,15 +44,5 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;
-    }
-
-    @Bean
-    public NewTopic createTransportBatteryTopic() {
-        return new NewTopic("transport-battery", 1, (short) 1);
-    }
-
-    @Bean
-    public NewTopic createEndRentalTopic() {
-        return new NewTopic("end-rental", 1, (short) 1);
     }
 }

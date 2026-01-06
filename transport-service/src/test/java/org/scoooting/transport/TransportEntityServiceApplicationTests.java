@@ -5,13 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
-import org.scoooting.transport.adapters.infrastructure.entities.Transport;
+import org.scoooting.transport.adapters.infrastructure.entities.TransportEntity;
+import org.scoooting.transport.adapters.interfaces.dto.UpdateCoordinatesDTO;
 import org.scoooting.transport.domain.model.enums.TransportType;
 import org.scoooting.transport.domain.exceptions.DataNotFoundException;
 import org.scoooting.transport.domain.exceptions.TransportNotFoundException;
 import org.scoooting.transport.adapters.infrastructure.repositories.r2dbc.TransportR2dbcRepository;
-import org.scoooting.transport.services.TransportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -32,7 +31,7 @@ import static org.scoooting.transport.TestcontainersConfiguration.*;
 @TestPropertySource(properties = {
         "spring.cloud.config.enabled=false"
 })
-class TransportServiceApplicationTests {
+class TransportEntityServiceApplicationTests {
 
     @Autowired
     private TransportService transportService;
@@ -45,7 +44,7 @@ class TransportServiceApplicationTests {
     private final Double lon = 30.398804;
     private final Double radius = 2.0;
 
-    private List<Transport> transports = new ArrayList<>();
+    private List<TransportEntity> transportEntities = new ArrayList<>();
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
@@ -63,16 +62,16 @@ class TransportServiceApplicationTests {
     void beforeEach() {
         transportR2dbcRepository.deleteAll().block();
         for (TransportType type : TransportType.values()) {
-            Transport transport = Transport.builder()
+            TransportEntity transportEntity = TransportEntity.builder()
                     .transportType(type)
                     .statusId(1L)
                     .cityId(1L)
                     .latitude(lat)
                     .longitude(lon)
                     .build();
-            transports.add(transport);
+            transportEntities.add(transportEntity);
         }
-        transportR2dbcRepository.saveAll(transports).blockLast();
+        transportR2dbcRepository.saveAll(transportEntities).blockLast();
     }
 
     @Test
@@ -102,9 +101,9 @@ class TransportServiceApplicationTests {
 
     @Test
     void getTransportByIdTest() {
-        for (Transport transport : transports) {
-            StepVerifier.create(transportService.getTransportById(transport.getId()))
-                    .assertNext(t -> assertEquals(transport.getId(), t.id()))
+        for (TransportEntity transportEntity : transportEntities) {
+            StepVerifier.create(transportService.getTransportById(transportEntity.getId()))
+                    .assertNext(t -> assertEquals(transportEntity.getId(), t.id()))
                     .verifyComplete();
         }
     }
@@ -157,8 +156,8 @@ class TransportServiceApplicationTests {
 
     @Test
     void updateTransportStatusTest() {
-        Transport transport = transports.get(0);
-        StepVerifier.create(transportService.updateTransportStatus(transport.getId(), "IN_USE"))
+        TransportEntity transportEntity = transportEntities.get(0);
+        StepVerifier.create(transportService.updateTransportStatus(transportEntity.getId(), "IN_USE"))
                 .assertNext(transportDto -> assertEquals(transportDto.status(), "IN_USE"))
                 .verifyComplete();
     }
@@ -172,7 +171,7 @@ class TransportServiceApplicationTests {
                 )
                 .verify();
 
-        StepVerifier.create(transportService.updateTransportStatus(transports.get(0).getId(), "HAHA"))
+        StepVerifier.create(transportService.updateTransportStatus(transportEntities.get(0).getId(), "HAHA"))
                 .expectErrorMatches(throwable ->
                         throwable instanceof DataNotFoundException &&
                                 throwable.getMessage().equals("Status not found")
@@ -182,9 +181,9 @@ class TransportServiceApplicationTests {
 
     @Test
     void updateCoordinatesTest() {
-        Transport transport = transports.get(0);
-        transportService.updateCoordinates(new UpdateCoordinatesDTO(transport.getId(), 40.0, 50.0)).block();
-        StepVerifier.create(transportR2dbcRepository.findById(transport.getId()))
+        TransportEntity transportEntity = transportEntities.get(0);
+        transportService.updateCoordinates(new UpdateCoordinatesDTO(transportEntity.getId(), 40.0, 50.0)).block();
+        StepVerifier.create(transportR2dbcRepository.findById(transportEntity.getId()))
                 .assertNext(updatedTransport -> {
                     assertEquals(40.0, updatedTransport.getLatitude());
                     assertEquals(50.0, updatedTransport.getLongitude());
@@ -200,8 +199,8 @@ class TransportServiceApplicationTests {
             "40, 180.1, 'Longitude must be between -180 and 180, got: '"
     })
     void updateCoordinatesTestError(double lat, double lon, String message) {
-        Transport transport = transports.get(0);
-        UpdateCoordinatesDTO coordinatesDTO = new UpdateCoordinatesDTO(transport.getId(), lat, lon);
+        TransportEntity transportEntity = transportEntities.get(0);
+        UpdateCoordinatesDTO coordinatesDTO = new UpdateCoordinatesDTO(transportEntity.getId(), lat, lon);
         StepVerifier.create(transportService.updateCoordinates(coordinatesDTO))
                 .expectErrorMatches(throwable ->
                         throwable instanceof IllegalArgumentException &&

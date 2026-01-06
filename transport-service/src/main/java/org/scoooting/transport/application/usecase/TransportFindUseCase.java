@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.scoooting.transport.domain.exceptions.TransportNotFoundException;
 import org.scoooting.transport.domain.model.enums.TransportType;
 import org.scoooting.transport.domain.repositories.TransportRepository;
-import org.scoooting.transport.dto.response.ScrollResponseDTO;
-import org.scoooting.transport.dto.response.TransportResponseDTO;
+import org.scoooting.transport.adapters.interfaces.dto.ScrollResponseDTO;
+import org.scoooting.transport.adapters.interfaces.dto.TransportResponseDTO;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class TransportUseCase {
+public class TransportFindUseCase {
 
     private final TransportRepository transportRepository;
     private final TransactionalOperator transactionalOperator;

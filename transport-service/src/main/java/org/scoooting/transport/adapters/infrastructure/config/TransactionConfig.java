@@ -1,4 +1,4 @@
-package org.scoooting.transport.config;
+package org.scoooting.transport.adapters.infrastructure.config;
 
 import io.r2dbc.spi.ConnectionFactory;
 import org.springframework.context.annotation.Bean;

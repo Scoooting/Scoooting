@@ -3,8 +3,8 @@ services:
     build: init/postgres
     container_name: postgres_container
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_pass
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - 5432:5432
     volumes:
@@ -15,14 +15,65 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    ports:
+      - 9000:9000
+      - 9001:9001
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9001/minio/health/live" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/minio
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - ./init/minio:/init
+    entrypoint: [ "/bin/sh", "/init/init.sh" ]
+    restart: "no"
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 1
+    ports:
+      - 9092:9092
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+
   eureka-server:
     build: ./eureka
     container_name: eureka-server
     ports:
       - 8761:8761
-    depends_on:
-      db:
-        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
       interval: 10s
@@ -37,8 +88,6 @@ services:
       - CONFIG_TOKEN=${CONFIG_TOKEN}
     ports:
       - 8888:8888
-    depends_on:
-      - eureka-server
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
       interval: 10s
@@ -59,7 +108,7 @@ services:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 8
@@ -78,7 +127,7 @@ services:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 8
@@ -97,7 +146,43 @@ services:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  file-service:
+    build: ./file-service
+    container_name: file-service
+    environment:
+      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI:-http://config-server:8888}
+    ports: []
+    depends_on:
+      minio:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8084/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    environment:
+      - CONFIG_SERVER_URI=${CONFIG_SERVER_URI:-http://config-server:8888}
+    ports: [ ]
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8085/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 8
@@ -105,15 +190,13 @@ services:
   api-gateway:
     build: ./api-gateway
     container_name: api-gateway
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
     ports:
       - 8080:8080
-    depends_on:
-      user-service:
-        condition: service_healthy
-      transport-service:
-        condition: service_healthy
-      rental-service:
-        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
       interval: 10s
@@ -122,3 +205,5 @@ services:
 
 volumes:
   db_data:
+  minio-data:
+  kafka-data:

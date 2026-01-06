@@ -1,4 +1,4 @@
-package org.scoooting.transport.adapters.infrastructure.feign;
+package org.scoooting.transport.adapters.infrastructure.messaging.feign;
 
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;

@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 @RequiredArgsConstructor
-public class TransportStatsDto {
+public class TransportStatsUseCase {
 
     private final TransportRepository transportRepository;
 

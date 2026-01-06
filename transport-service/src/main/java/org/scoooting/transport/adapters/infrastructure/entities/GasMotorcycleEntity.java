@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class GasMotorcycle {
+public class GasMotorcycleEntity {
 
     @Id
     private Long transportId;

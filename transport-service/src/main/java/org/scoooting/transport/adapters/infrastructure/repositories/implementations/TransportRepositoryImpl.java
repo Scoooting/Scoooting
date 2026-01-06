@@ -5,14 +5,13 @@ import org.scoooting.transport.adapters.infrastructure.repositories.mappers.Tran
 import org.scoooting.transport.adapters.infrastructure.repositories.r2dbc.TransportR2dbcRepository;
 import org.scoooting.transport.domain.model.Transport;
 import org.scoooting.transport.domain.model.enums.TransportType;
-import org.scoooting.transport.domain.repositories.TransportRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
 @RequiredArgsConstructor
-public class TransportRepositoryImpl implements TransportRepository {
+public class TransportRepositoryImpl implements org.scoooting.transport.domain.repositories.TransportRepository {
 
     private final TransportR2dbcRepository repository;
     private final TransportEntityMapper mapper;

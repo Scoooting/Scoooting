@@ -1,4 +1,4 @@
-package org.scoooting.transport.dto.common;
+package org.scoooting.transport.adapters.interfaces.dto;
 
 import jakarta.validation.constraints.NotNull;
 

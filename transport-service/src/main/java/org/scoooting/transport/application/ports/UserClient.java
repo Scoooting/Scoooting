@@ -1,4 +1,4 @@
-package org.scoooting.transport.application.ports.clients;
+package org.scoooting.transport.application.ports;
 
 import reactor.core.publisher.Mono;
 

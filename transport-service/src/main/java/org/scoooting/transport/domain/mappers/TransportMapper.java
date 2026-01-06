@@ -1,18 +1,22 @@
-package org.scoooting.transport.adapters.infrastructure.repositories.mappers;
+package org.scoooting.transport.domain.mappers;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
-import org.scoooting.transport.adapters.infrastructure.entities.TransportEntity;
 import org.scoooting.transport.domain.model.Transport;
-
-import java.util.List;
+import org.scoooting.transport.adapters.interfaces.dto.TransportResponseDTO;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface TransportMapper {
 
-    Transport toDomain(TransportEntity transportEntity);
+    Transport toDomain(TransportResponseDTO transportResponseDTO);
 
-    TransportEntity toEntity(Transport transport);
-
-    List<Transport> toDomainList(List<TransportEntity> transportEntityList);
+    @Mapping(target = "type", source = "transport.transportType")
+    @Mapping(target = "status", source = "statusName")
+    @Mapping(target = "cityName", source = "cityName")
+    TransportResponseDTO toResponseDTO(
+            Transport transport,
+            String statusName,
+            String cityName
+    );
 }

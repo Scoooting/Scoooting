@@ -1,4 +1,4 @@
-package org.scoooting.transport.dto.request;
+package org.scoooting.transport.adapters.interfaces.dto;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;

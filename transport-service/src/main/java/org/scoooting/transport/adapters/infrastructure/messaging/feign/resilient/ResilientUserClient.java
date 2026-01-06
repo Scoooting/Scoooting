@@ -1,10 +1,10 @@
-package org.scoooting.transport.adapters.infrastructure.feign.resilient;
+package org.scoooting.transport.adapters.infrastructure.messaging.feign.resilient;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.scoooting.transport.application.ports.clients.UserClient;
+import org.scoooting.transport.application.ports.UserClient;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;

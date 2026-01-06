@@ -1,4 +1,4 @@
-package org.scoooting.transport.config;
+package org.scoooting.transport.adapters.infrastructure.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

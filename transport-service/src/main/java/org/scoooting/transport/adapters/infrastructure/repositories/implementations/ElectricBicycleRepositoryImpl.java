@@ -5,13 +5,12 @@ import org.scoooting.transport.adapters.infrastructure.repositories.mappers.Elec
 import org.scoooting.transport.adapters.infrastructure.repositories.r2dbc.ElectricBicycleR2dbcRepository;
 import org.scoooting.transport.domain.model.ElectricBicycle;
 import org.scoooting.transport.domain.repositories.ElectricBicycleRepository;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Mono;
 
-@Component
+@Repository
 @RequiredArgsConstructor
-public class ElectricBicycleR2dbcRepositoryImpl implements ElectricBicycleRepository {
+public class ElectricBicycleRepositoryImpl implements ElectricBicycleRepository {
 
     private final ElectricBicycleR2dbcRepository repository;
     private final ElectricBicycleMapper mapper;

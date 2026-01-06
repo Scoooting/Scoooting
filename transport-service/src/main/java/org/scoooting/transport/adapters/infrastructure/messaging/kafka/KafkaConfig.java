@@ -1,4 +1,4 @@
-package org.scoooting.transport.adapters.infrastructure.config;
+package org.scoooting.transport.adapters.infrastructure.messaging.kafka;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -51,11 +51,11 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic createTransportBatteryTopic() {
-        return new NewTopic("transport-battery", 1, (short) 1);
+        return new NewTopic(TRANSPORT_BATTERY, 1, (short) 1);
     }
 
     @Bean
     public NewTopic createEndRentalTopic() {
-        return new NewTopic("end-rental", 1, (short) 1);
+        return new NewTopic(END_RENTAL, 1, (short) 1);
     }
 }

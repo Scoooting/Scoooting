@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ElectricKickScooter {
+public class ElectricKickScooterEntity {
 
     // PK = FK to transports table
     @Id

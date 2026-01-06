@@ -1,4 +1,4 @@
-package org.scoooting.transport.dto.request;
+package org.scoooting.transport.adapters.interfaces.dto;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;

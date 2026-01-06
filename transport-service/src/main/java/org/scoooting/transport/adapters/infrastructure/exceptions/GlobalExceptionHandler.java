@@ -1,18 +1,17 @@
-package org.scoooting.transport.exceptions;
+package org.scoooting.transport.adapters.infrastructure.exceptions;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
-import org.scoooting.transport.dto.common.ErrorResponseDTO;
+import org.scoooting.transport.adapters.infrastructure.exceptions.dto.ErrorResponseDTO;
+import org.scoooting.transport.domain.exceptions.DataNotFoundException;
+import org.scoooting.transport.domain.exceptions.TransportNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
-import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 

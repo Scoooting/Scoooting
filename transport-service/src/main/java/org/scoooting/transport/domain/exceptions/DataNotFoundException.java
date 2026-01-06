@@ -1,4 +1,4 @@
-package org.scoooting.transport.exceptions;
+package org.scoooting.transport.domain.exceptions;
 
 public class DataNotFoundException extends RuntimeException {
     public DataNotFoundException(String message) {

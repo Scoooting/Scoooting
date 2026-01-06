@@ -1,3 +1,3 @@
-package org.scoooting.transport.dto.kafka;
+package org.scoooting.transport.adapters.infrastructure.messaging.kafka.dto;
 
 public record BatteryNotificationDto(long userId, int battery) {}

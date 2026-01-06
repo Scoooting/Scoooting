@@ -1,9 +1,8 @@
-package org.scoooting.transport.controllers;
+package org.scoooting.transport.adapters.interfaces.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -11,12 +10,14 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.scoooting.transport.config.UserPrincipal;
-import org.scoooting.transport.dto.request.UpdateCoordinatesDTO;
-import org.scoooting.transport.dto.response.ScrollResponseDTO;
-import org.scoooting.transport.dto.response.TransportResponseDTO;
-import org.scoooting.transport.entities.enums.TransportType;
-import org.scoooting.transport.services.TransportService;
+import org.scoooting.transport.adapters.infrastructure.security.UserPrincipal;
+import org.scoooting.transport.application.usecase.TransportFindUseCase;
+import org.scoooting.transport.application.usecase.TransportStatsUseCase;
+import org.scoooting.transport.application.usecase.TransportUpdateUseCase;
+import org.scoooting.transport.adapters.interfaces.dto.UpdateCoordinatesDTO;
+import org.scoooting.transport.adapters.interfaces.dto.ScrollResponseDTO;
+import org.scoooting.transport.adapters.interfaces.dto.TransportResponseDTO;
+import org.scoooting.transport.domain.model.enums.TransportType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -33,7 +34,9 @@ import java.util.Map;
 @Validated
 public class TransportController {
 
-    private final TransportService transportService;
+    private final TransportFindUseCase transportFindUseCase;
+    private final TransportUpdateUseCase transportUpdateUseCase;
+    private final TransportStatsUseCase transportStatsUseCase;
 
     // ==================== PUBLIC OPERATIONS ====================
 
@@ -49,7 +52,7 @@ public class TransportController {
             @RequestParam(defaultValue = "2.0") @DecimalMin("0.1") @DecimalMax("50") Double radiusKm
     ) {
         log.info("Finding nearest transports at ({}, {}) within {}km", lat, lng, radiusKm);
-        return transportService.findNearestTransports(lat, lng, radiusKm);
+        return transportFindUseCase.findNearestTransports(lat, lng, radiusKm);
     }
 
     @Operation(
@@ -65,7 +68,7 @@ public class TransportController {
             @RequestParam(defaultValue = "2.0") @DecimalMin("0.1") @DecimalMax("50") Double radiusKm
     ) {
         log.info("Finding nearest {} at ({}, {}) within {}km", type, lat, lng, radiusKm);
-        return transportService.findTransportsByType(type, lat, lng, radiusKm);
+        return transportFindUseCase.findTransportsByType(type, lat, lng, radiusKm);
     }
 
     @Operation(
@@ -80,7 +83,7 @@ public class TransportController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(50) Integer size
     ) {
         log.info("Scrolling available transports of type: {}, page: {}, size: {}", type, page, size);
-        return transportService.scrollAvailableTransportsByType(type, page, size);
+        return transportFindUseCase.scrollAvailableTransportsByType(type, page, size);
     }
 
     @Operation(
@@ -95,7 +98,7 @@ public class TransportController {
     @GetMapping("/{id}")
     public Mono<TransportResponseDTO> getTransport(@PathVariable Long id) {
         log.info("Getting transport by id: {}", id);
-        return transportService.getTransportById(id);
+        return transportFindUseCase.getTransportById(id);
     }
 
     // ==================== ANALYST OPERATIONS ====================
@@ -111,7 +114,7 @@ public class TransportController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("User {} fetching availability stats", principal.getEmail());
-        return transportService.getAvailabilityStats();
+        return transportStatsUseCase.getAvailabilityStats();
     }
 
     // ==================== OPERATOR OPERATIONS ====================
@@ -133,7 +136,7 @@ public class TransportController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Operator {} updating coordinates for transport {}", principal.getEmail(), dto.transportId());
-        return transportService.updateCoordinates(dto);
+        return transportUpdateUseCase.updateCoordinates(dto);
     }
 
     @Operation(
@@ -149,6 +152,6 @@ public class TransportController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         log.info("Operator {} updating status of transport {} to {}", principal.getEmail(), id, status);
-        return transportService.updateTransportStatus(id, status);
+        return transportUpdateUseCase.updateTransportStatus(id, status);
     }
 }

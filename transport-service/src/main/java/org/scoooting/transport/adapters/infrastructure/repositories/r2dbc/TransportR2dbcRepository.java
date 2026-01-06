@@ -9,7 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface TransportRepository extends ReactiveCrudRepository<TransportEntity, Long> {
+public interface TransportR2dbcRepository extends ReactiveCrudRepository<TransportEntity, Long> {
 
     @Query("""
         SELECT * FROM transports 
