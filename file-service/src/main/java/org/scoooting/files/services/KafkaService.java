@@ -17,6 +17,10 @@ public class KafkaService {
     private final ObjectMapper mapper = new ObjectMapper();
     private final ReportsService reportsService;
 
+    /**
+     * This method is called when rental is ended, cancelled or force ended.
+     * @param message
+     */
     @KafkaListener(topics = "reports-data", groupId = "file-service")
     public void generateReport(HashMap<String, Object> message) {
         ReportDataDTO reportData = mapper.convertValue(message, ReportDataDTO.class);

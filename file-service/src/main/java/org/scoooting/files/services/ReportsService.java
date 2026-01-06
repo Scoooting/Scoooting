@@ -30,6 +30,10 @@ public class ReportsService {
     @Value("${minio.buckets.user-files}")
     private String userFilesBucket;
 
+    /**
+     * Generate the report from template pdf file with user's credentials and its rental data.
+     * @param report - all required data for pdf.
+     */
     public void generateReport(ReportDataDTO report) {
         try (InputStream inputStream = fileService.getObject(userFilesBucket, "reports/Отчет об аренде.pdf").inputStream();
              PdfReader pdfReader = new PdfReader(inputStream);
@@ -68,6 +72,12 @@ public class ReportsService {
         }
     }
 
+    /**
+     * fill the template pdf file. This file is created when storage starts.
+     * @param userId - user ID
+     * @param time - time of rental end.
+     * @param bytes - array of bytes of canvas
+     */
     private void writePdfToMinio(Long userId, Long time, byte[] bytes) {
         String reportName = fileFormat.getFilenameWithTime(fileFormat.getReportsFormat(), userId, time);
 
@@ -80,6 +90,11 @@ public class ReportsService {
         }
     }
 
+    /**
+     * Get absolute path of fonts which locate in resources directory.
+     * @param font - font name
+     * @return
+     */
     private String getFontPath(String font) {
         URL url = getClass().getClassLoader().getResource("fonts/" + font + ".ttf");
         try {

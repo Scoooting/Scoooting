@@ -1,5 +1,6 @@
 package org.scoooting.files.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,12 @@ public class FileController {
     @Value("${minio.buckets.default}")
     private String defaultBucket;
 
+    // ==================== USER OPERATIONS ====================
+
+    @Operation(
+            summary = "[USER] Get user's list of photos",
+            tags = {"User File Operations"}
+    )
     @GetMapping("/get-transport-photos-list")
     public ResponseEntity<List<String>> getTransportPhotosList(@AuthenticationPrincipal UserPrincipal principal) {
         String path = String.format(fileService.getParent(fileFormat.getTransportPhotosFormat()), principal.getUserId());
@@ -40,6 +47,10 @@ public class FileController {
         return ResponseEntity.ok(files);
     }
 
+    @Operation(
+            summary = "[USER] Get user's list of reports",
+            tags = {"User File Operations"}
+    )
     @GetMapping("/get-reports-list")
     public ResponseEntity<List<String>> getReportsList(@AuthenticationPrincipal UserPrincipal principal) {
         String path = String.format(fileService.getParent(fileFormat.getReportsFormat()), principal.getUserId());
@@ -47,6 +58,10 @@ public class FileController {
         return ResponseEntity.ok(files);
     }
 
+    @Operation(
+            summary = "[USER] Upload photo of transport",
+            tags = {"User File Operations"}
+    )
     @PostMapping(value = "/upload-transport-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> uploadPhoto(
             @RequestPart("file") MultipartFile file,
@@ -56,6 +71,10 @@ public class FileController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(
+            summary = "[USER] Download report for the specified date",
+            tags = {"User File Operations"}
+    )
     @PostMapping("/download-report")
     public ResponseEntity<InputStreamResource> downloadReport(
             @RequestBody LocalTimeDto localTimeDto,
@@ -69,6 +88,10 @@ public class FileController {
                 .body(new InputStreamResource(fileDto.inputStream()));
     }
 
+    @Operation(
+            summary = "[USER] Download photo for the specified date",
+            tags = {"User File Operations"}
+    )
     @PostMapping("/download-photo")
     public ResponseEntity<InputStreamResource> downloadPhoto(
             @RequestBody LocalTimeDto localTimeDto,
@@ -82,6 +105,12 @@ public class FileController {
                 .body(new InputStreamResource(fileDto.inputStream()));
     }
 
+    // ==================== SUPPORT OPERATIONS ====================
+
+    @Operation(
+            summary = "[SUPPORT] Get file list of any specified path",
+            tags = {"Support File Operations"}
+    )
     @GetMapping("/get-files-list")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     public ResponseEntity<List<String>> getFilesList(@RequestParam(defaultValue = "") String path,
@@ -91,16 +120,10 @@ public class FileController {
         return ResponseEntity.ok(files);
     }
 
-    @PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-    public ResponseEntity<InputStreamResource> uploadFile(@RequestPart("file") MultipartFile file,
-                                                            @RequestParam(required = false) String bucket,
-                                                            @RequestParam @NotNull String path) {
-        bucket = bucket == null ? defaultBucket : bucket;
-        fileService.uploadObject(bucket, file, path + "/" + file.getOriginalFilename());
-        return ResponseEntity.ok().build();
-    }
-
+    @Operation(
+            summary = "[SUPPORT] Download file of any specified path",
+            tags = {"Support File Operations"}
+    )
     @GetMapping("/download-file")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     public ResponseEntity<InputStreamResource> downloadFile(@RequestParam @NotBlank String path,
@@ -114,6 +137,26 @@ public class FileController {
                 .body(new InputStreamResource(fileDto.inputStream()));
     }
 
+    // ==================== ADMIN ONLY OPERATIONS ====================
+
+    @Operation(
+            summary = "[ADMIN] Upload file to storage",
+            tags = {"Admin File Operations"}
+    )
+    @PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<InputStreamResource> uploadFile(@RequestPart("file") MultipartFile file,
+                                                          @RequestParam(required = false) String bucket,
+                                                          @RequestParam @NotNull String path) {
+        bucket = bucket == null ? defaultBucket : bucket;
+        fileService.uploadObject(bucket, file, path + "/" + file.getOriginalFilename());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(
+            summary = "[ADMIN] Remove any file",
+            tags = {"Admin File Operations"}
+    )
     @DeleteMapping("/remove-file")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> removeFile(@RequestParam @NotBlank String path,
