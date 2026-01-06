@@ -40,6 +40,13 @@ public class FileController {
         return ResponseEntity.ok(files);
     }
 
+    @GetMapping("/get-reports-list")
+    public ResponseEntity<List<String>> getReportsList(@AuthenticationPrincipal UserPrincipal principal) {
+        String path = String.format(fileService.getParent(fileFormat.getReportsFormat()), principal.getUserId());
+        List<String> files = fileService.getListDir(userFilesBucket, path);
+        return ResponseEntity.ok(files);
+    }
+
     @PostMapping(value = "/upload-transport-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> uploadPhoto(
             @RequestPart("file") MultipartFile file,
