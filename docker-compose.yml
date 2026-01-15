@@ -43,7 +43,7 @@ services:
       - MINIO_ROOT_USER=${MINIO_ROOT_USER:-minio}
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minio123}
     volumes:
-      - ./init/minio:/init
+      - ./init/minio:/init:z
     entrypoint: [ "/bin/sh", "/init/init.sh" ]
     restart: "no"
 
