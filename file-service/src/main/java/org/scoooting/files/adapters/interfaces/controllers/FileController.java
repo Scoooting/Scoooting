@@ -68,8 +68,27 @@ public class FileController {
             @AuthenticationPrincipal UserPrincipal userPrincipal
             ) throws IOException {
 
-        if (!file.getContentType().equals("image/jpeg"))
+        // we only accept jpeg
+        if (!file.getContentType().equals("image/jpeg")) {
             throw new FileTypeException("image/jpeg", file.getContentType());
+        }
+
+        // shouldn't be empty
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+
+        // max 10 MB (in the configs)
+        long maxSize = 10 * 1024 * 1024; // 10 MB
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("File size exceeds 10MB limit");
+        }
+
+        // validate filename
+        if (file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()) {
+            throw new IllegalArgumentException("File name is missing");
+        }
+
         uploadTransportPhotoUseCase.execute(userPrincipal.getUserId(), transportPhotosFormat, dateFormat,
                 file.getInputStream(), file.getSize());
         return ResponseEntity.ok().build();
@@ -152,6 +171,22 @@ public class FileController {
     public ResponseEntity<InputStreamResource> uploadFile(@RequestPart("file") MultipartFile file,
                                                           @RequestParam(required = false) FileCategory category,
                                                           @RequestParam @NotNull String path) throws IOException {
+        // shouldn't be empty
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("File is empty");
+        }
+
+        // max 10 MB (in the configs)
+        long maxSize = 10 * 1024 * 1024; // 10 MB
+        if (file.getSize() > maxSize) {
+            throw new IllegalArgumentException("File size exceeds 10MB limit");
+        }
+
+        // validate filename
+        if (file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()) {
+            throw new IllegalArgumentException("File name is missing");
+        }
+
         category = category == null ? FileCategory.DEFAULT : category;
         storageOperationsUseCase.upload(category,path + "/" + file.getOriginalFilename(), file.getInputStream(),
                 file.getSize(), file.getContentType());
