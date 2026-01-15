@@ -1,6 +1,5 @@
 package org.scoooting.files.adapters.infrastructure.exceptions;
 
-import io.minio.errors.ErrorResponseException;
 import lombok.extern.slf4j.Slf4j;
 import org.scoooting.files.adapters.infrastructure.exceptions.dto.ErrorResponseDTO;
 import org.scoooting.files.domain.exceptions.FileNotFoundException;

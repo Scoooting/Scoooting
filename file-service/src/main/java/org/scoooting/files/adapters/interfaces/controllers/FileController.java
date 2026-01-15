@@ -15,6 +15,7 @@ import org.scoooting.files.application.ports.dto.FileDto;
 import org.scoooting.files.domain.exceptions.FileTypeException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -135,7 +136,7 @@ public class FileController {
 
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header("Content-disposition", "attachment; filename=\"" + fileDto.filename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileDto.filename() + "\"")
                 .body(new InputStreamResource(fileDto.inputStream()));
     }
 

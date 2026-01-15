@@ -14,6 +14,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -50,7 +53,10 @@ public class MinioOperations implements StorageOperations {
     @Override
     public FileDto download(FileCategory fileCategory, String path) {
         try {
-            return new FileDto(path, minioClient.getObject(GetObjectArgs.builder()
+            String filename = Paths.get(path).getFileName().toString();
+            filename = URLEncoder.encode(filename, StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            return new FileDto(filename, minioClient.getObject(GetObjectArgs.builder()
                     .bucket(getBucketName(fileCategory))
                     .object(path)
                     .build()
