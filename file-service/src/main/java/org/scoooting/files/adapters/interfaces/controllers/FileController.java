@@ -1,6 +1,7 @@
 package org.scoooting.files.adapters.interfaces.controllers;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -80,7 +81,7 @@ public class FileController {
     )
     @PostMapping("/download-report")
     public ResponseEntity<InputStreamResource> downloadReport(
-            @RequestBody LocalTimeDto localTimeDto,
+            @RequestBody @Valid LocalTimeDto localTimeDto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         FileDto fileDto = downloadUserFilesUseCase.execute(principal.getUserId(), reportsFormat,
@@ -97,7 +98,7 @@ public class FileController {
     )
     @PostMapping("/download-photo")
     public ResponseEntity<InputStreamResource> downloadPhoto(
-            @RequestBody LocalTimeDto localTimeDto,
+            @RequestBody @Valid LocalTimeDto localTimeDto,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         FileDto fileDto = downloadUserFilesUseCase.execute(principal.getUserId(),
