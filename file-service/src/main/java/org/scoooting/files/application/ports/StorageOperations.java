@@ -14,7 +14,7 @@ public interface StorageOperations {
     /**
      * Upload file to storage. Main method
      * @param fileCategory - category of file
-     * @param is - object of InputStream interface
+     * @param inputStream - object of InputStream interface
      * @param path - path to specified directory with filename
      * @param size - size of file
      * @param contentType - content type
