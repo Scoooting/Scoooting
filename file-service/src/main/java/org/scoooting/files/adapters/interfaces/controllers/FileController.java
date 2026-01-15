@@ -78,12 +78,6 @@ public class FileController {
             throw new IllegalArgumentException("File is empty");
         }
 
-        // max 10 MB (in the configs)
-        long maxSize = 10 * 1024 * 1024; // 10 MB
-        if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("File size exceeds 10MB limit");
-        }
-
         // validate filename
         if (file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()) {
             throw new IllegalArgumentException("File name is missing");
@@ -174,12 +168,6 @@ public class FileController {
         // shouldn't be empty
         if (file.isEmpty()) {
             throw new IllegalArgumentException("File is empty");
-        }
-
-        // max 10 MB (in the configs)
-        long maxSize = 10 * 1024 * 1024; // 10 MB
-        if (file.getSize() > maxSize) {
-            throw new IllegalArgumentException("File size exceeds 10MB limit");
         }
 
         // validate filename
