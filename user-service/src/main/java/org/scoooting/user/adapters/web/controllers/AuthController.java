@@ -4,9 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.scoooting.user.adapters.web.mappers.WebCommandMapperDto;
-import org.scoooting.user.adapters.web.request.UserRegistrationDTO;
-import org.scoooting.user.adapters.web.request.UserSignInDto;
+import org.scoooting.user.adapters.web.mappers.WebCommandMapper;
+import org.scoooting.user.adapters.web.dto.UserRegistrationDTO;
+import org.scoooting.user.adapters.web.dto.UserSignInDto;
 import org.scoooting.user.application.dto.response.AuthResult;
 import org.scoooting.user.application.dto.request.RegistrationCommand;
 import org.scoooting.user.application.dto.request.SignInCommand;
@@ -25,21 +25,21 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class AuthController {
 
-    private final WebCommandMapperDto webCommandMapperDto;
+    private final WebCommandMapper webCommandMapper;
     private final UserAuthUseCase userAuthUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDto)
             throws UserAlreadyExistsException {
-        RegistrationCommand registrationCommand = webCommandMapperDto.toRegistrationCommand(userRegistrationDto);
+        RegistrationCommand registrationCommand = webCommandMapper.toRegistrationCommand(userRegistrationDto);
         AuthResult authResult = userAuthUseCase.registerUser(registrationCommand);
         return ResponseEntity.ok(authResult.accessToken());
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> signIn(@RequestBody @Valid UserSignInDto userSignInDto) throws UserNotFoundException {
-        SignInCommand signInCommand = webCommandMapperDto.toSignInCommand(userSignInDto);
+        SignInCommand signInCommand = webCommandMapper.toSignInCommand(userSignInDto);
         AuthResult authResult = userAuthUseCase.signIn(signInCommand);
         return ResponseEntity.ok(authResult.accessToken());
     }

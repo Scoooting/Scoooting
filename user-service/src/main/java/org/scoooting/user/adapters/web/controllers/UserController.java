@@ -8,10 +8,10 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.scoooting.user.adapters.security.UserPrincipal;
-import org.scoooting.user.adapters.web.mappers.WebCommandMapperDto;
-import org.scoooting.user.adapters.web.request.AdminUpdateUserRequestDTO;
-import org.scoooting.user.adapters.web.request.UpdateUserRequestDTO;
-import org.scoooting.user.adapters.web.request.UserCreationByAdminRequestDTO;
+import org.scoooting.user.adapters.web.mappers.WebCommandMapper;
+import org.scoooting.user.adapters.web.dto.AdminUpdateUserRequestDTO;
+import org.scoooting.user.adapters.web.dto.UpdateUserRequestDTO;
+import org.scoooting.user.adapters.web.dto.UserCreationByAdminRequestDTO;
 import org.scoooting.user.application.dto.request.AdminUpdateUserCommand;
 import org.scoooting.user.application.dto.request.CreateUserByAdminCommand;
 import org.scoooting.user.application.dto.request.UpdateUserCommand;
@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class UserController {
 
-    private final WebCommandMapperDto webCommandMapperDto;
+    private final WebCommandMapper webCommandMapper;
 
     private final GetUserUseCase getUserUseCase;
     private final CreateUserUseCase createUserUseCase;
@@ -79,7 +79,7 @@ public class UserController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateUserRequestDTO request
     ) {
-        UpdateUserCommand updateUserCommand = webCommandMapperDto.toUpdateUserCommand(request);
+        UpdateUserCommand updateUserCommand = webCommandMapper.toUpdateUserCommand(request);
         UserResponseDTO user = updateUserUseCase.updateUser(principal.getUserId(), updateUserCommand);
         return ResponseEntity.ok(user);
     }
@@ -142,7 +142,7 @@ public class UserController {
             @PathVariable @Min(0) @Max(Long.MAX_VALUE) Long id,
             @Valid @RequestBody AdminUpdateUserRequestDTO request
     ) {
-        AdminUpdateUserCommand adminUpdateUserCommand = webCommandMapperDto.toAdminUpdateUserCommand(request);
+        AdminUpdateUserCommand adminUpdateUserCommand = webCommandMapper.toAdminUpdateUserCommand(request);
         UserResponseDTO user = updateUserUseCase.adminUpdateUser(id, adminUpdateUserCommand);
         return ResponseEntity.ok(user);
     }
@@ -188,7 +188,7 @@ public class UserController {
         log.info("AuthController: Admin {} creating user with email: {} and role: {}",
                 principal.getEmail(), request.email(), request.roleName());
         try {
-            CreateUserByAdminCommand createUserByAdminCommand = webCommandMapperDto.toCreateUserByAdminCommand(request);
+            CreateUserByAdminCommand createUserByAdminCommand = webCommandMapper.toCreateUserByAdminCommand(request);
             AuthResult authResult = createUserUseCase.createUserWithRole(createUserByAdminCommand);
             log.info("AuthController: User created successfully");
             return ResponseEntity.ok(authResult.accessToken());

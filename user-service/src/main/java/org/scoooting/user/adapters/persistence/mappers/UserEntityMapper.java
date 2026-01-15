@@ -1,11 +1,8 @@
 package org.scoooting.user.adapters.persistence.mappers;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.scoooting.user.adapters.persistence.entities.UserEntity;
-import org.scoooting.user.adapters.web.request.UserRegistrationDTO;
-import org.scoooting.user.application.dto.response.UserResponseDTO;
 import org.scoooting.user.domain.model.User;
 
 import java.util.List;
