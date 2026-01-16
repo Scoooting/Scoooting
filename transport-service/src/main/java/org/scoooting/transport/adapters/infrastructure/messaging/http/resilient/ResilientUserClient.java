@@ -1,4 +1,4 @@
-package org.scoooting.transport.adapters.infrastructure.messaging.feign.resilient;
+package org.scoooting.transport.adapters.infrastructure.messaging.http.resilient;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
