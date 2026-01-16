@@ -81,3 +81,57 @@ tasks.named('test') {
     useJUnitPlatform()
     finalizedBy tasks.named('jacocoTestReport')
 }
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/ports/**'
+            }
+    )
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/ports/**'
+            }
+    )
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
