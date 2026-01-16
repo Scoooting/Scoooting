@@ -1,5 +1,6 @@
 package org.scoooting.rental.application.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -8,6 +9,7 @@ import java.time.Instant;
 
 @Data
 @Builder
+@AllArgsConstructor
 public class RentalResponseDTO {
     private Long id;
     private Long userId;
@@ -18,4 +20,8 @@ public class RentalResponseDTO {
     private Instant endTime;
     private BigDecimal totalCost;
     private Integer durationMinutes;
+
+    public RentalResponseDTO() {
+
+    }
 }
