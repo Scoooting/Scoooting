@@ -1,7 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.1'
+    id 'org.springframework.boot' version '3.4.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'org.scoooting'
@@ -24,7 +25,7 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2025.1.0")
+    set('springCloudVersion', "2025.0.0")  // было 2025.1.0
 }
 
 dependencies {
@@ -39,11 +40,12 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
 
+    implementation 'org.jspecify:jspecify:1.0.0'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
-    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -55,4 +57,62 @@ dependencyManagement {
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy 'jacocoTestReport'
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+
+    // Покрываем ТОЛЬКО use cases
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/dto/**'
+                exclude '**/application/ports/**'
+            }
+    )
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/dto/**'
+                exclude '**/application/ports/**'
+            }
+    )
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
