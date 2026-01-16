@@ -5,7 +5,9 @@ import lombok.NoArgsConstructor;
 import org.scoooting.files.application.ports.dto.LocalTimeDto;
 
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
@@ -14,7 +16,12 @@ public class FileFormat {
 
     // get formatted date string using seconds since 1970 year
     public static String getStringDateFormat(long seconds, String dateFormat) {
-        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(seconds, 0, ZoneOffset.UTC);
+        ZoneId spbZone = ZoneId.of("Europe/Moscow");
+        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(
+                seconds,
+                0,
+                spbZone.getRules().getOffset(Instant.ofEpochSecond(seconds))
+        );
         return DateTimeFormatter.ofPattern(dateFormat).format(localDateTime);
     }
 
@@ -47,12 +54,4 @@ public class FileFormat {
             return "";
         return Paths.get(path).getParent().toString().replace("\\", "/") + "/";
     }
-
-//    public String getFilenameWithTime(String pathFormat, long id, LocalTimeDto localTimeDto) {
-//        return String.format(pathFormat, id, getStringDateFormat(localTimeDto));
-//    }
-//
-//    public String getFilenameWithTime(String pathFormat, long id, long time) {
-//        return String.format(pathFormat, id, getStringDateFormat(time));
-//    }
 }

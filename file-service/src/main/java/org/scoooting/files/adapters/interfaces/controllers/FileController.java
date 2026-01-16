@@ -65,6 +65,7 @@ public class FileController {
     @PostMapping(value = "/upload-transport-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> uploadPhoto(
             @RequestPart("file") MultipartFile file,
+            @RequestParam(required = false) Long userId,
             @AuthenticationPrincipal UserPrincipal userPrincipal
             ) throws IOException {
 
@@ -83,7 +84,8 @@ public class FileController {
             throw new IllegalArgumentException("File name is missing");
         }
 
-        uploadTransportPhotoUseCase.execute(userPrincipal.getUserId(), transportPhotosFormat, dateFormat,
+        Long effectiveUserId = (userId != null) ? userId : userPrincipal.getUserId();
+        uploadTransportPhotoUseCase.execute(effectiveUserId, transportPhotosFormat, dateFormat,
                 file.getInputStream(), file.getSize());
         return ResponseEntity.ok().build();
     }
@@ -154,14 +156,14 @@ public class FileController {
                 .body(new InputStreamResource(fileDto.inputStream()));
     }
 
-    // ==================== ADMIN ONLY OPERATIONS ====================
+    // ==================== OPERATOR OPERATIONS ====================
 
     @Operation(
-            summary = "[ADMIN] Upload file to storage",
-            tags = {"Admin File Operations"}
+            summary = "[OPERATOR] Upload file to storage",
+            tags = {"Operator File Operations"}
     )
     @PostMapping(value = "/upload-file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<InputStreamResource> uploadFile(@RequestPart("file") MultipartFile file,
                                                           @RequestParam(required = false) FileCategory category,
                                                           @RequestParam @NotNull String path) throws IOException {
@@ -180,6 +182,8 @@ public class FileController {
                 file.getSize(), file.getContentType());
         return ResponseEntity.ok().build();
     }
+
+    // ==================== ADMIN ONLY OPERATIONS ====================
 
     @Operation(
             summary = "[ADMIN] Remove any file",

@@ -1,6 +1,7 @@
 package org.scoooting.rental.application.usecase.rentals;
 
 import lombok.RequiredArgsConstructor;
+import org.scoooting.rental.adapters.message.feign.resilient.ResilientFileClient;
 import org.scoooting.rental.adapters.message.kafka.TransportPublisher;
 import org.scoooting.rental.adapters.message.kafka.UserPublisher;
 import org.scoooting.rental.application.mappers.RentalMapper;
@@ -13,7 +14,10 @@ import org.scoooting.rental.domain.repositories.RentalRepository;
 import org.scoooting.rental.domain.repositories.RentalStatusRepository;
 import org.scoooting.rental.application.dto.RentalResponseDTO;
 import org.scoooting.rental.application.dto.TransportResponseDTO;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -30,6 +34,7 @@ public class EndRentalUseCase {
     private final TransportPublisher transportPublisher;
     private final UserPublisher userPublisher;
     private final RentalMapper rentalMapper;
+    private final ResilientFileClient fileClient;
 
     private static final BigDecimal BASE_RATE = new BigDecimal("0.50");
     private static final BigDecimal UNLOCK_FEE = new BigDecimal("1.00");
@@ -37,9 +42,38 @@ public class EndRentalUseCase {
     /**
      * End rental (reactive wrapper).
      */
-    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng) {
-        return Mono.fromCallable(() -> endRentalBlocking(userId, endLat, endLng))
-                .subscribeOn(Schedulers.boundedElastic());
+    public Mono<RentalResponseDTO> endRental(Long userId, Double endLat, Double endLng,
+                                             FilePart photo) {
+        return validateAndConvertPhoto(photo)
+                .flatMap(photoBytes -> Mono.fromCallable(() ->
+                                endRentalBlocking(userId, endLat, endLng, photoBytes))
+                        .subscribeOn(Schedulers.boundedElastic())
+                );
+    }
+
+
+    private Mono<byte[]> validateAndConvertPhoto(FilePart photo) {
+        if (photo == null) {
+            return Mono.error(new IllegalArgumentException("Photo is required to end rental"));
+        }
+
+        // Проверка Content-Type
+        String contentType = photo.headers().getContentType() != null
+                ? photo.headers().getContentType().toString()
+                : "";
+
+        if (!contentType.equals("image/jpeg")) {
+            return Mono.error(new IllegalArgumentException("Only JPEG photos are allowed"));
+        }
+
+        // Конвертируем FilePart → byte[]
+        return DataBufferUtils.join(photo.content())
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    DataBufferUtils.release(dataBuffer);
+                    return bytes;
+                });
     }
 
     /**
@@ -76,7 +110,11 @@ public class EndRentalUseCase {
      * - Eventually consistent (acceptable for bonuses/coords)
      */
     @Transactional
-    protected RentalResponseDTO endRentalBlocking(Long userId, Double endLat, Double endLng) {
+    protected RentalResponseDTO endRentalBlocking(Long userId, Double endLat, Double endLng,
+                                                  byte[] photoBytes) {
+        // Upload photo (if fails - rental not ended)
+        fileClient.uploadTransportPhoto(photoBytes, userId);
+
         // Find active rental
         Rental rental = rentalRepository.findActiveRentalByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("No active rental found for user"));

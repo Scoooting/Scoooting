@@ -1,5 +1,6 @@
 package org.scoooting.rental.adapters.config;
 
+import org.scoooting.rental.adapters.message.feign.resilient.ResilientFileClient;
 import org.scoooting.rental.adapters.message.kafka.TransportPublisher;
 import org.scoooting.rental.adapters.message.kafka.UserPublisher;
 import org.scoooting.rental.application.mappers.RentalMapper;
@@ -34,9 +35,10 @@ public class UseCaseConfig {
                                              TransportClient transportClient,
                                              TransportPublisher transportPublisher,
                                              UserPublisher userPublisher,
+                                             ResilientFileClient fileClient,
                                              RentalMapper rentalMapper) {
         return new EndRentalUseCase(rentalRepository, rentalStatusRepository,
-                transportClient, transportPublisher, userPublisher, rentalMapper);
+                transportClient, transportPublisher, userPublisher,rentalMapper, fileClient);
     }
 
     @Bean

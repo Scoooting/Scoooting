@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.scoooting.rental.adapters.security.UserPrincipal;
@@ -16,11 +17,14 @@ import org.scoooting.rental.adapters.web.dto.EndRentalRequestDTO;
 import org.scoooting.rental.adapters.web.dto.StartRentalRequestDTO;
 import org.scoooting.rental.application.dto.RentalResponseDTO;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -66,28 +70,32 @@ public class RentalController {
     }
 
     @Operation(
-            summary = "[USER] End current rental",
-            description = "User can end their own active rental. Available to: ALL authenticated users",
+            summary = "[USER] End current rental with photo",
+            description = "User must provide a photo of transport to end rental",
             tags = {"User Rental Operations"}
     )
-    @PostMapping("/end")
+    @PostMapping(value = "/end", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<ResponseEntity<RentalResponseDTO>> endRental(
-            @Valid @RequestBody EndRentalRequestDTO request,
+            @RequestPart("photo") FilePart photo,
+            @RequestParam("endLatitude") @NotNull Double endLatitude,
+            @RequestParam("endLongitude") @NotNull Double endLongitude,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        log.info("User {} ending their rental", principal.getUserId());
+        log.info("User {} ending rental with photo", principal.getUserId());
 
         return endRentalUseCase.endRental(
                 principal.getUserId(),
-                request.endLatitude(),
-                request.endLongitude()
+                endLatitude,
+                endLongitude,
+                photo
         ).flatMap(rental ->
                 sendReportUseCase.sendReport(rental, principal)
                         .then(sendNotificationUseCase.sendNotification(new RentalEventDto(
                                 principal.getUserId(),
                                 RentalEventDto.RentalType.END)
-                ))
-                .thenReturn(ResponseEntity.ok(rental)));
+                        ))
+                        .thenReturn(ResponseEntity.ok(rental))
+        );
     }
 
     @Operation(

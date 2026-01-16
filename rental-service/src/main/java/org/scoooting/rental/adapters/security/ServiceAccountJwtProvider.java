@@ -23,7 +23,7 @@ public class ServiceAccountJwtProvider {
             return cachedToken;
         }
 
-        // Генерируем новый токен
+        // generate new token
         Instant now = Instant.now();
         Instant expiry = now.plus(1, ChronoUnit.HOURS);
 
