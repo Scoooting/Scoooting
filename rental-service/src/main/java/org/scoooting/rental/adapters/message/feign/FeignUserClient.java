@@ -11,15 +11,6 @@ public interface FeignUserClient {
     @GetMapping("/user/{id}")
     ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id);
 
-    @GetMapping("/me")
-    ResponseEntity<UserResponseDTO> getCurrentUser();
-
-    @PostMapping("/user/{id}/bonuses")
-    ResponseEntity<UserResponseDTO> addBonuses(
-            @PathVariable Long id,
-            @RequestParam Integer amount
-    );
-
     @GetMapping("/city/{name}")
     ResponseEntity<Long> getIdByCity(@PathVariable String name);
 }

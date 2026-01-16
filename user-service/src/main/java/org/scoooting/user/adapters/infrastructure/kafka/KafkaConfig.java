@@ -1,6 +1,5 @@
-package org.scoooting.transport.adapters.infrastructure.messaging.kafka;
+package org.scoooting.user.adapters.infrastructure.kafka;
 
-import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,20 +19,14 @@ import java.util.Map;
 @EnableKafka
 public class KafkaConfig {
 
-    public static final String TRANSPORT_BATTERY = "transport-battery";
-    public static final String END_RENTAL = "end-rental";
-
     @Value("${spring.kafka.bootstrap-servers}")
     private String server;
-
-    @Value("${spring.kafka.consumer.group-id}")
-    private String groupId;
 
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, server);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "user-service");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
@@ -51,15 +44,5 @@ public class KafkaConfig {
         factory.setConsumerFactory(consumerFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         return factory;
-    }
-
-    @Bean
-    public NewTopic createTransportBatteryTopic() {
-        return new NewTopic(TRANSPORT_BATTERY, 3, (short) 3);
-    }
-
-    @Bean
-    public NewTopic createEndRentalTopic() {
-        return new NewTopic(END_RENTAL, 3, (short) 3);
     }
 }

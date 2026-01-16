@@ -21,6 +21,8 @@ public class KafkaConfig {
 
     public static final String REPORTS_DATA_TOPIC = "reports-data";
     public static final String RENTAL_EVENTS_TOPIC = "rental-events";
+    public static final String TRANSPORT_COMMANDS_TOPIC = "transport-commands";
+    public static final String USER_COMMANDS_TOPIC = "user-commands";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String server;
@@ -49,13 +51,30 @@ public class KafkaConfig {
         return factory;
     }
 
+    /*
+    * For each topic,
+    * 3 partitions => parallel msg handling => bigger throughput
+    * 3 replics => can't instantly loose all data when 1 broker fails
+    * (if broker 1 fails -> broker 2 becomes leader, and so on)
+    * */
+
     @Bean
     public NewTopic createReportsDataTopic() {
-        return new NewTopic(REPORTS_DATA_TOPIC, 1, (short) 1);
+        return new NewTopic(REPORTS_DATA_TOPIC, 3, (short) 3);
     }
 
     @Bean
     public NewTopic createRentalEventsTopic() {
-        return new NewTopic(RENTAL_EVENTS_TOPIC, 1, (short) 1);
+        return new NewTopic(RENTAL_EVENTS_TOPIC, 3, (short) 3);
+    }
+
+    @Bean
+    public NewTopic createTransportCommandsTopic() {
+        return new NewTopic(TRANSPORT_COMMANDS_TOPIC, 3, (short) 3);
+    }
+
+    @Bean
+    public NewTopic createUserCommandsTopic() {
+        return new NewTopic(USER_COMMANDS_TOPIC, 3, (short) 3);
     }
 }

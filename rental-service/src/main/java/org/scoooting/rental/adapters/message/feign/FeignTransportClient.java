@@ -1,6 +1,5 @@
 package org.scoooting.rental.adapters.message.feign;
 
-import org.scoooting.rental.adapters.message.feign.dto.UpdateCoordinatesDTO;
 import org.scoooting.rental.application.dto.TransportResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -14,13 +13,4 @@ public interface FeignTransportClient {
 
     @GetMapping("/{id}")
     ResponseEntity<TransportResponseDTO> getTransport(@PathVariable Long id);
-
-    @PutMapping("/{id}/status")
-    ResponseEntity<TransportResponseDTO> updateTransportStatus(
-            @PathVariable Long id,
-            @RequestParam String status
-    );
-
-    @PutMapping("/update-coordinates")
-    ResponseEntity<Void> updateTransportCoordinates(@RequestBody UpdateCoordinatesDTO updateCoordinatesDTO);
 }

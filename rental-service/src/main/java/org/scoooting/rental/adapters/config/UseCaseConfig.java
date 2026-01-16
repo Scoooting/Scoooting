@@ -1,5 +1,7 @@
 package org.scoooting.rental.adapters.config;
 
+import org.scoooting.rental.adapters.message.kafka.TransportPublisher;
+import org.scoooting.rental.adapters.message.kafka.UserPublisher;
 import org.scoooting.rental.application.mappers.RentalMapper;
 import org.scoooting.rental.application.ports.NotificationSender;
 import org.scoooting.rental.application.ports.ReportSender;
@@ -20,17 +22,21 @@ public class UseCaseConfig {
     public CancelRentalUseCase cancelRentalUseCase(RentalRepository rentalRepository,
                                                    RentalStatusRepository rentalStatusRepository,
                                                    TransportClient transportClient,
+                                                   TransportPublisher transportPublisher,
                                                    RentalMapper rentalMapper) {
-        return new CancelRentalUseCase(rentalRepository, rentalStatusRepository, transportClient, rentalMapper);
+        return new CancelRentalUseCase(rentalRepository, rentalStatusRepository,
+                transportClient, transportPublisher, rentalMapper);
     }
 
     @Bean
     public EndRentalUseCase endRentalUseCase(RentalRepository rentalRepository,
                                              RentalStatusRepository rentalStatusRepository,
                                              TransportClient transportClient,
-                                             UserClient userClient,
+                                             TransportPublisher transportPublisher,
+                                             UserPublisher userPublisher,
                                              RentalMapper rentalMapper) {
-        return new EndRentalUseCase(rentalRepository, rentalStatusRepository, transportClient, userClient, rentalMapper);
+        return new EndRentalUseCase(rentalRepository, rentalStatusRepository,
+                transportClient, transportPublisher, userPublisher, rentalMapper);
     }
 
     @Bean
@@ -38,9 +44,11 @@ public class UseCaseConfig {
                                                        RentalStatusRepository rentalStatusRepository,
                                                        TransportClient transportClient,
                                                        UserClient userClient,
+                                                       TransportPublisher transportPublisher,
+                                                       UserPublisher userPublisher,
                                                        RentalMapper rentalMapper) {
         return new ForceEndRentalUseCase(rentalRepository, rentalStatusRepository,
-                transportClient, userClient, rentalMapper);
+                transportClient, userClient, transportPublisher, userPublisher, rentalMapper);
     }
 
     @Bean
@@ -59,8 +67,10 @@ public class UseCaseConfig {
     public StartRentalUseCase startRentalUseCase(RentalRepository rentalRepository,
                                                  RentalStatusRepository rentalStatusRepository,
                                                  TransportClient transportClient,
+                                                 TransportPublisher transportPublisher,
                                                  RentalMapper rentalMapper) {
-        return new StartRentalUseCase(rentalRepository, rentalStatusRepository, transportClient, rentalMapper);
+        return new StartRentalUseCase(rentalRepository, rentalStatusRepository,
+                transportClient, transportPublisher, rentalMapper);
     }
 
     @Bean
@@ -72,5 +82,4 @@ public class UseCaseConfig {
     public SendReportUseCase sendReportUseCase(ReportSender reportSender) {
         return new SendReportUseCase(reportSender);
     }
-
 }
