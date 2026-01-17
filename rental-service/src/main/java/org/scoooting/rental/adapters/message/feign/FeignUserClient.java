@@ -1,0 +1,16 @@
+package org.scoooting.rental.adapters.message.feign;
+
+import org.scoooting.rental.application.dto.UserResponseDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@FeignClient(name = "user-service", url = "${user-service.url:}", path = "/api/users")
+public interface FeignUserClient {
+
+    @GetMapping("/user/{id}")
+    ResponseEntity<UserResponseDTO> getUserById(@PathVariable Long id);
+
+    @GetMapping("/city/{name}")
+    ResponseEntity<Long> getIdByCity(@PathVariable String name);
+}

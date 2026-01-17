@@ -2,17 +2,28 @@ spring:
   application:
     name: transport_service_test
 
-  flyway:
-    baseline-on-migrate: true
-    placeholders:
-      adminUsername: admin
-      adminEmail: admin@ya.ru
-      adminPassword: 1234
+  datasource:
+    url: jdbc:postgresql://localhost:5432/transports_db
+    username: postgres
+    password: postgres_pass
+
+  sql:
+    init:
+      mode: always
+      platform: postgresql
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      continue-on-error: false
 
   cloud:
     config:
       enabled: false
 
 eureka:
-  instance:
-    prefer-ip-address: true
+  client:
+    enabled: false
+
+jwt:
+  secret: test
+  access-duration: ${JWT_ACCESS_DURATION:900}
+  refresh-duration: ${JWT_REFRESH_DURATION:86400}

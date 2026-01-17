@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'org.scoooting'
@@ -24,8 +25,18 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer:4.3.0'
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:4.3.0'
@@ -57,6 +68,70 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+tasks.register("buildDockerImages", Exec) {
+    doFirst() {
+        commandLine "docker", "compose", "-f", "../docker-compose.yml", "build",
+                "db", "eureka-server", "config-server", "user-service"
+        sleep(2000) // <- It's obligatory or else all tests are failed due to error in actuator.
+    }
+}
+
 tasks.named('test') {
+//    dependsOn "buildDockerImages"
     useJUnitPlatform()
+    finalizedBy tasks.named('jacocoTestReport')
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/ports/**'
+            }
+    )
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/ports/**'
+            }
+    )
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }

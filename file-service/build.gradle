@@ -1,0 +1,127 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
+}
+
+group = 'org.scoooting'
+version = '0.0.1-SNAPSHOT'
+description = 'file-service'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.0.0")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:4.3.0'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.12'
+    implementation 'io.minio:minio:8.6.0'
+    implementation 'com.github.librepdf:openpdf:3.0.0'
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy 'jacocoTestReport'
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+                include '**/application/services/**'  // добавили
+                include '**/adapters/infrastructure/minio/**'  // добавили
+                include '**/adapters/infrastructure/reports/**'  // добавили
+
+                exclude '**/adapters/interfaces/**'  // контроллеры не тестируем
+                exclude '**/domain/**'
+                exclude '**/application/dto/**'
+                exclude '**/application/ports/**'
+                exclude '**/application/model/**'
+            }
+    )
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+                include '**/application/services/**'
+                include '**/adapters/infrastructure/minio/**'
+                include '**/adapters/infrastructure/reports/**'
+
+                exclude '**/adapters/interfaces/**'
+                exclude '**/domain/**'
+                exclude '**/application/dto/**'
+                exclude '**/application/ports/**'
+                exclude '**/application/model/**'
+            }
+    )
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}

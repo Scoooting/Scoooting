@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'jacoco'
 }
 
 group = 'org.scoooting'
@@ -24,6 +25,7 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -42,6 +44,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
+    implementation 'io.github.openfeign.form:feign-form:3.8.0'
+    implementation 'io.github.openfeign.form:feign-form-spring:3.8.0'
+
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
@@ -51,9 +61,84 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'
     testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'io.projectreactor:reactor-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+tasks.register("buildDockerImages", Exec) {
+    doFirst() {
+        commandLine "docker", "compose", "-f", "../docker-compose.yml", "build",
+                "db", "eureka-server", "config-server", "user-service", "transport-service"
+        sleep(2000)
+    }
+
+}
+
 tasks.named('test') {
+//    dependsOn "buildDockerImages"
     useJUnitPlatform()
+    finalizedBy tasks.named('jacocoTestReport')
+}
+
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+
+    // Покрываем ТОЛЬКО use cases и services
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+                include '**/application/services/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/dto/**'
+                exclude '**/application/mappers/**'
+                exclude '**/application/ports/**'
+                exclude '**/*Application.class'
+            }
+    )
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.80
+            }
+        }
+    }
+
+    classDirectories.setFrom(
+            fileTree(layout.buildDirectory.dir('classes/java/main')) {
+                include '**/application/usecase/**'
+                include '**/application/services/**'
+
+                exclude '**/adapters/**'
+                exclude '**/domain/**'
+                exclude '**/application/dto/**'
+                exclude '**/application/mappers/**'
+                exclude '**/application/ports/**'
+                exclude '**/*Application.class'
+            }
+    )
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }

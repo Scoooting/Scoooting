@@ -1,0 +1,10 @@
+rootProject.name = "scoooting"
+
+include("eureka")
+include("config-server")
+include("user-service")
+include("transport-service")
+include("rental-service")
+include("api-gateway")
+include("file-service")
+include("notification-service")
